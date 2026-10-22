@@ -229,54 +229,118 @@ export default function AdminPage() {
 
   // Действия над услугами
   const handleSaveService = async (srv: Service) => {
-    const res = await fetch("/api/services", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(srv),
-    });
+    try {
+      // Оптимистичное обновление UI
+      setServices((prev) => {
+        const idx = prev.findIndex((s) => s.id === srv.id);
+        if (idx >= 0) {
+          const updated = [...prev];
+          updated[idx] = srv;
+          return updated;
+        }
+        return [srv, ...prev];
+      });
 
-    if (res.ok) {
+      const res = await fetch("/api/services", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(srv),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Ошибка сохранения услуги");
+      }
+
       await fetchAllData();
+    } catch (err: any) {
+      alert("Не удалось сохранить услугу: " + err.message);
     }
   };
 
   const handleDeleteService = async (id: string) => {
-    const res = await fetch(`/api/services?id=${id}`, { method: "DELETE" });
-    if (res.ok) {
+    try {
       setServices((prev) => prev.filter((s) => s.id !== id));
-    }
-  };
-
-  const handleSaveCategory = async (cat: Category) => {
-    const res = await fetch("/api/categories", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(cat),
-    });
-
-    if (res.ok) {
+      const res = await fetch(`/api/services?id=${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Ошибка удаления");
+      }
+    } catch (err: any) {
+      alert("Ошибка удаления услуги: " + err.message);
       await fetchAllData();
     }
   };
 
+  const handleSaveCategory = async (cat: Category) => {
+    try {
+      setCategories((prev) => {
+        const idx = prev.findIndex((c) => c.id === cat.id);
+        if (idx >= 0) {
+          const updated = [...prev];
+          updated[idx] = cat;
+          return updated;
+        }
+        return [...prev, cat];
+      });
+
+      const res = await fetch("/api/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(cat),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Ошибка сохранения категории");
+      }
+
+      await fetchAllData();
+    } catch (err: any) {
+      alert("Не удалось сохранить категорию: " + err.message);
+    }
+  };
+
   const handleDeleteCategory = async (id: string) => {
-    const res = await fetch(`/api/categories?id=${id}`, { method: "DELETE" });
-    if (res.ok) {
+    try {
+      setCategories((prev) => prev.filter((c) => c.id !== id));
+      const res = await fetch(`/api/categories?id=${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Ошибка удаления");
+      }
+      await fetchAllData();
+    } catch (err: any) {
+      alert("Ошибка удаления категории: " + err.message);
       await fetchAllData();
     }
   };
 
   // Действия над брендом
   const handleSaveBrand = async (settings: Partial<BrandSettings>) => {
-    const res = await fetch("/api/brand", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(settings),
-    });
+    try {
+      // Оптимистично обновляем бренд в состоянии
+      if (brand) {
+        setBrand({ ...brand, ...settings });
+      }
 
-    if (res.ok) {
+      const res = await fetch("/api/brand", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(settings),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Ошибка обновления настроек бренда");
+      }
+
       const data = await res.json();
-      setBrand(data.brand);
+      if (data.brand) {
+        setBrand(data.brand);
+      }
+    } catch (err: any) {
+      alert("Не удалось сохранить настройки бренда: " + err.message);
     }
   };
 

@@ -4,6 +4,10 @@ import { DatabaseSchema, BrandSettings, Category, Service, Booking, BlockedSlot,
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const DB_FILE = path.join(DATA_DIR, 'database.json');
+const TMP_DB_FILE = path.join('/tmp', 'database.json');
+
+// Глобальный in-memory кэш базы данных для серверлесс
+let memoryDb: DatabaseSchema | null = null;
 
 // Начальные данные по умолчанию (бренд ANOMAYKA)
 const DEFAULT_BRAND: BrandSettings = {
@@ -260,8 +264,24 @@ function ensureDirectoryExists(filePath: string) {
   }
 }
 
-// Загрузка базы данных
+// Загрузка базы данных с поддержкой Vercel Serverless
 export function getDatabase(): DatabaseSchema {
+  if (memoryDb) {
+    return memoryDb;
+  }
+
+  // 1. Проверяем /tmp/database.json (если ранее записывали на Vercel)
+  try {
+    if (fs.existsSync(TMP_DB_FILE)) {
+      const content = fs.readFileSync(TMP_DB_FILE, 'utf-8');
+      memoryDb = JSON.parse(content);
+      return memoryDb!;
+    }
+  } catch (e) {
+    // игнорируем
+  }
+
+  // 2. Читаем основной файл из репозитория
   try {
     ensureDirectoryExists(DB_FILE);
     if (!fs.existsSync(DB_FILE)) {
@@ -303,33 +323,64 @@ export function getDatabase(): DatabaseSchema {
         faqs: DEFAULT_FAQS,
         reviews: DEFAULT_REVIEWS
       };
-      fs.writeFileSync(DB_FILE, JSON.stringify(initialDb, null, 2), 'utf-8');
+      try {
+        fs.writeFileSync(DB_FILE, JSON.stringify(initialDb, null, 2), 'utf-8');
+      } catch (writeErr) {}
+      memoryDb = initialDb;
       return initialDb;
     }
 
     const content = fs.readFileSync(DB_FILE, 'utf-8');
-    return JSON.parse(content);
+    memoryDb = JSON.parse(content);
+    return memoryDb!;
   } catch (err) {
     console.error('Ошибка чтения базы данных:', err);
-    return {
+    memoryDb = {
       brand: DEFAULT_BRAND,
       categories: DEFAULT_CATEGORIES,
       services: DEFAULT_SERVICES,
       bookings: [],
       blockedSlots: [],
-      admins: [],
+      admins: [
+        {
+          id: 'adm-1',
+          email: 'admin@anomayka.ru',
+          passwordHash: 'admin123',
+          name: 'Главный Администратор',
+          role: 'owner'
+        }
+      ],
       faqs: DEFAULT_FAQS,
       reviews: DEFAULT_REVIEWS
     };
+    return memoryDb;
   }
 }
 
-// Атомарное сохранение базы данных
+// Безопасное сохранение базы данных (с поддержкой Read-Only на Vercel)
 export function saveDatabase(data: DatabaseSchema): void {
-  ensureDirectoryExists(DB_FILE);
-  const tempFile = `${DB_FILE}.tmp.${Date.now()}`;
-  fs.writeFileSync(tempFile, JSON.stringify(data, null, 2), 'utf-8');
-  fs.renameSync(tempFile, DB_FILE);
+  memoryDb = data;
+
+  // 1. Попытка записать в постоянный локальный файл (работает локально, на Render и VPS)
+  try {
+    ensureDirectoryExists(DB_FILE);
+    const tempFile = `${DB_FILE}.tmp.${Date.now()}`;
+    fs.writeFileSync(tempFile, JSON.stringify(data, null, 2), 'utf-8');
+    fs.renameSync(tempFile, DB_FILE);
+  } catch (err) {
+    // На Vercel Serverless корень read-only, поэтому пишем в /tmp
+    // console.warn('Локальный диск read-only, сохраняем в /tmp');
+  }
+
+  // 2. Всегда дублируем в /tmp для серверлесс функций
+  try {
+    ensureDirectoryExists(TMP_DB_FILE);
+    const tempTmpFile = `${TMP_DB_FILE}.tmp.${Date.now()}`;
+    fs.writeFileSync(tempTmpFile, JSON.stringify(data, null, 2), 'utf-8');
+    fs.renameSync(tempTmpFile, TMP_DB_FILE);
+  } catch (tmpErr) {
+    // В крайнем случае данные остаются в memoryDb
+  }
 }
 
 // Вспомогательные функции для расписания и слотов

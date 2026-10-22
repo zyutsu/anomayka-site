@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ filename: string }> }
@@ -9,7 +11,14 @@ export async function GET(
   try {
     const { filename } = await params;
     const cleanFilename = path.basename(filename);
-    const filePath = path.join(process.cwd(), 'public', 'uploads', cleanFilename);
+
+    // 1. Проверяем public/uploads
+    let filePath = path.join(process.cwd(), 'public', 'uploads', cleanFilename);
+
+    // 2. Если нет — проверяем /tmp/uploads
+    if (!fs.existsSync(filePath)) {
+      filePath = path.join('/tmp', 'uploads', cleanFilename);
+    }
 
     if (!fs.existsSync(filePath)) {
       return new NextResponse('File not found', { status: 404 });
