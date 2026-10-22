@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
-import { getDatabase, saveDatabase, getAvailableSlots } from '@/lib/db';
+import { getDatabaseAsync, saveDatabaseAsync, getAvailableSlots } from '@/lib/db';
 import { Booking } from '@/lib/types';
+
+export const dynamic = 'force-dynamic';
 
 function generateBookingCode(prefix: string = 'AN'): string {
   const randNum = Math.floor(1000 + Math.random() * 9000);
@@ -13,7 +15,7 @@ export async function GET(req: Request) {
   const date = searchParams.get('date');
   const status = searchParams.get('status');
 
-  const db = getDatabase();
+  const db = await getDatabaseAsync();
   let bookings = db.bookings;
 
   // Фильтрация для клиента по номеру телефона
@@ -44,7 +46,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const db = getDatabase();
+    const db = await getDatabaseAsync();
 
     // Сценарий 1: Заказ обратного звонка / Сложный случай
     if (body.isCallRequest) {
@@ -80,7 +82,7 @@ export async function POST(req: Request) {
       };
 
       db.bookings.push(newCallBooking);
-      saveDatabase(db);
+      await saveDatabaseAsync(db);
 
       return NextResponse.json({
         success: true,
@@ -139,7 +141,7 @@ export async function POST(req: Request) {
     };
 
     db.bookings.push(newBooking);
-    saveDatabase(db);
+    await saveDatabaseAsync(db);
 
     return NextResponse.json({
       success: true,

@@ -8,6 +8,7 @@ const TMP_DB_FILE = path.join('/tmp', 'database.json');
 
 // Глобальный in-memory кэш базы данных для серверлесс
 let memoryDb: DatabaseSchema | null = null;
+const VERCEL_BLOB_DB_URL = 'https://sputkeclegvjikpr.public.blob.vercel-storage.com/database.json';
 
 // Начальные данные по умолчанию (бренд ANOMAYKA)
 const DEFAULT_BRAND: BrandSettings = {
@@ -357,6 +358,54 @@ export function getDatabase(): DatabaseSchema {
   }
 }
 
+// Асинхронное получение базы данных с централизованным хранилищем Vercel Blob
+export async function getDatabaseAsync(): Promise<DatabaseSchema> {
+  // 1. Если подключен Vercel Blob — всегда берем самую свежую версию из облака
+  if (process.env.BLOB_STORE_ID || process.env.BLOB_READ_WRITE_TOKEN || process.env.VERCEL_OIDC_TOKEN) {
+    try {
+      const res = await fetch(`${VERCEL_BLOB_DB_URL}?t=${Date.now()}`, {
+        cache: 'no-store',
+      });
+      if (res.ok) {
+        const cloudDb: DatabaseSchema = await res.json();
+        if (cloudDb && cloudDb.brand && Array.isArray(cloudDb.categories)) {
+          memoryDb = cloudDb;
+          // Дублируем в /tmp для мгновенного доступа
+          try {
+            ensureDirectoryExists(TMP_DB_FILE);
+            fs.writeFileSync(TMP_DB_FILE, JSON.stringify(cloudDb, null, 2), 'utf-8');
+          } catch (e) {}
+          return cloudDb;
+        }
+      }
+    } catch (blobErr) {
+      // Игнорируем сетевые ошибки и используем локальный fallback
+    }
+  }
+
+  // 2. Fallback на локальный синхронный getDatabase
+  return getDatabase();
+}
+
+// Асинхронное сохранение базы данных с персистентностью в Vercel Blob
+export async function saveDatabaseAsync(data: DatabaseSchema): Promise<void> {
+  saveDatabase(data);
+
+  // Сохраняем в Vercel Blob для глобальной синхронизации между всеми контейнерами
+  if (process.env.BLOB_STORE_ID || process.env.BLOB_READ_WRITE_TOKEN || process.env.VERCEL_OIDC_TOKEN) {
+    try {
+      const { put } = await import('@vercel/blob');
+      await put('database.json', JSON.stringify(data, null, 2), {
+        access: 'public',
+        addRandomSuffix: false,
+        allowOverwrite: true,
+      });
+    } catch (err) {
+      console.error('Ошибка сохранения базы данных в Vercel Blob:', err);
+    }
+  }
+}
+
 // Безопасное сохранение базы данных (с поддержкой Read-Only на Vercel)
 export function saveDatabase(data: DatabaseSchema): void {
   memoryDb = data;
@@ -369,7 +418,6 @@ export function saveDatabase(data: DatabaseSchema): void {
     fs.renameSync(tempFile, DB_FILE);
   } catch (err) {
     // На Vercel Serverless корень read-only, поэтому пишем в /tmp
-    // console.warn('Локальный диск read-only, сохраняем в /tmp');
   }
 
   // 2. Всегда дублируем в /tmp для серверлесс функций
@@ -380,6 +428,19 @@ export function saveDatabase(data: DatabaseSchema): void {
     fs.renameSync(tempTmpFile, TMP_DB_FILE);
   } catch (tmpErr) {
     // В крайнем случае данные остаются в memoryDb
+  }
+
+  // 3. Фоновая синхронизация с Vercel Blob без блокировки
+  if (process.env.BLOB_STORE_ID || process.env.BLOB_READ_WRITE_TOKEN || process.env.VERCEL_OIDC_TOKEN) {
+    import('@vercel/blob')
+      .then(({ put }) =>
+        put('database.json', JSON.stringify(data, null, 2), {
+          access: 'public',
+          addRandomSuffix: false,
+          allowOverwrite: true,
+        })
+      )
+      .catch((e) => console.error('Фоновая синхронизация в Blob не удалась:', e));
   }
 }
 

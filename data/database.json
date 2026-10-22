@@ -111,16 +111,6 @@
       "imageUrl": "/uploads/1792626760308-nbftme.jpg",
       "order": 6,
       "isActive": true
-    },
-    {
-      "id": "cat-1792682069428",
-      "title": "Валюшка любимка моя",
-      "slug": "валюшка-любимка-моя-",
-      "description": "",
-      "icon": "Wrench",
-      "imageUrl": "",
-      "order": 7,
-      "isActive": true
     }
   ],
   "services": [

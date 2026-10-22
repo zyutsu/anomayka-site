@@ -41,3 +41,4 @@ yandex_search_api_sample.json
 next-env.d.ts
 
 .vercel
+.env*

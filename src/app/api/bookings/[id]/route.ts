@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server';
-import { getDatabase, saveDatabase, getAvailableSlots } from '@/lib/db';
+import { getDatabaseAsync, saveDatabaseAsync, getAvailableSlots } from '@/lib/db';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const db = getDatabase();
+  const db = await getDatabaseAsync();
   const booking = db.bookings.find((b) => b.id === id || b.code === id);
 
   if (!booking) {
@@ -23,7 +25,7 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await req.json();
-    const db = getDatabase();
+    const db = await getDatabaseAsync();
 
     const bookingIndex = db.bookings.findIndex((b) => b.id === id || b.code === id);
     if (bookingIndex === -1) {
@@ -62,7 +64,7 @@ export async function PATCH(
     };
 
     db.bookings[bookingIndex] = updatedBooking;
-    saveDatabase(db);
+    await saveDatabaseAsync(db);
 
     return NextResponse.json({ success: true, booking: updatedBooking });
   } catch (error) {

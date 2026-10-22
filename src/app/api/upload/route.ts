@@ -26,6 +26,20 @@ export async function POST(req: Request) {
     const ext = path.extname(file.name) || (mimeType.includes('png') ? '.png' : '.jpg');
     const cleanName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}${ext}`;
 
+    // 1. Приоритет: Vercel Blob Storage (персистентное облачное хранилище с глобальным CDN)
+    if (process.env.BLOB_STORE_ID || process.env.BLOB_READ_WRITE_TOKEN || process.env.VERCEL_OIDC_TOKEN) {
+      try {
+        const { put } = await import('@vercel/blob');
+        const blob = await put(`uploads/${cleanName}`, buffer, {
+          access: 'public',
+          contentType: mimeType,
+        });
+        return NextResponse.json({ success: true, url: blob.url });
+      } catch (blobErr) {
+        console.error('Ошибка сохранения в Vercel Blob:', blobErr);
+      }
+    }
+
     // 2. Попытка сохранить в public/uploads (для локального сервера и хостингов с постоянным диском типа Render)
     try {
       const uploadsDir = path.join(process.cwd(), 'public', 'uploads');

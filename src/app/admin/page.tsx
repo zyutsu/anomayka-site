@@ -13,8 +13,10 @@ import { AdminDemoGenerator } from "@/components/admin/AdminDemoGenerator";
 import { LayoutDashboard, CalendarCheck, Wrench, Palette, Clock, LogOut, Shield, Camera, Lock, PhoneCall, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useBrand } from "@/context/BrandContext";
 
 export default function AdminPage() {
+  const { brand: contextBrand, updateBrand: updateContextBrand, isDemo, resetDemo } = useBrand();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [adminUser, setAdminUser] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<"dashboard" | "bookings" | "services" | "schedule" | "brand" | "photos" | "security" | "demo">("dashboard");
@@ -91,7 +93,13 @@ export default function AdminPage() {
         setBookings(await bRes.json());
         setServices(await sRes.json());
         setCategories(await cRes.json());
-        setBrand(await brRes.json());
+        const serverBrand = await brRes.json();
+        // В демо-режиме отображаем демо-бренд, иначе серверный
+        if (isDemo && contextBrand) {
+          setBrand(contextBrand);
+        } else {
+          setBrand(serverBrand);
+        }
       }
     } catch (e) {
       console.error("Ошибка обновления данных админки:", e);
@@ -252,9 +260,13 @@ export default function AdminPage() {
         throw new Error(err.error || "Ошибка сохранения услуги");
       }
 
-      await fetchAllData();
+      const data = await res.json();
+      if (data.services) {
+        setServices(data.services);
+      }
     } catch (err: any) {
       alert("Не удалось сохранить услугу: " + err.message);
+      await fetchAllData();
     }
   };
 
@@ -265,6 +277,10 @@ export default function AdminPage() {
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error || "Ошибка удаления");
+      }
+      const data = await res.json();
+      if (data.services) {
+        setServices(data.services);
       }
     } catch (err: any) {
       alert("Ошибка удаления услуги: " + err.message);
@@ -295,21 +311,34 @@ export default function AdminPage() {
         throw new Error(err.error || "Ошибка сохранения категории");
       }
 
-      await fetchAllData();
+      const data = await res.json();
+      if (data.categories) {
+        setCategories(data.categories);
+      }
     } catch (err: any) {
       alert("Не удалось сохранить категорию: " + err.message);
+      await fetchAllData();
     }
   };
 
   const handleDeleteCategory = async (id: string) => {
     try {
+      // 1. Оптимистично удаляем категорию и связанные услуги
       setCategories((prev) => prev.filter((c) => c.id !== id));
+      setServices((prev) => prev.filter((s) => s.categoryId !== id));
+
       const res = await fetch(`/api/categories?id=${id}`, { method: "DELETE" });
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error || "Ошибка удаления");
       }
-      await fetchAllData();
+      const data = await res.json();
+      if (data.categories) {
+        setCategories(data.categories);
+      }
+      if (data.services) {
+        setServices(data.services);
+      }
     } catch (err: any) {
       alert("Ошибка удаления категории: " + err.message);
       await fetchAllData();
@@ -319,10 +348,11 @@ export default function AdminPage() {
   // Действия над брендом
   const handleSaveBrand = async (settings: Partial<BrandSettings>) => {
     try {
-      // Оптимистично обновляем бренд в состоянии
+      // Оптимистично обновляем бренд в состоянии и в глобальном контексте
       if (brand) {
         setBrand({ ...brand, ...settings });
       }
+      updateContextBrand(settings);
 
       const res = await fetch("/api/brand", {
         method: "POST",
@@ -338,6 +368,7 @@ export default function AdminPage() {
       const data = await res.json();
       if (data.brand) {
         setBrand(data.brand);
+        updateContextBrand(data.brand);
       }
     } catch (err: any) {
       alert("Не удалось сохранить настройки бренда: " + err.message);
@@ -416,8 +447,12 @@ export default function AdminPage() {
       {/* Шапка панели управления */}
       <div className="p-5 rounded-2xl bg-brand-surface border border-brand-border flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
         <div className="flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-brand-accent/20 border border-brand-accent/40 flex items-center justify-center text-brand-accent">
-            <Shield className="w-6 h-6" />
+          <div className="w-12 h-12 rounded-xl bg-black/60 border border-brand-border overflow-hidden flex items-center justify-center shrink-0">
+            {brand?.logoUrl ? (
+              <img src={brand.logoUrl} alt={brand?.name || "Logo"} className="w-full h-full object-cover" />
+            ) : (
+              <Shield className="w-6 h-6 text-brand-accent" />
+            )}
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -552,6 +587,46 @@ export default function AdminPage() {
           </button>
         </div>
       </div>
+
+      {/* Баннер активного демо-режима */}
+      {isDemo && brand && (
+        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-amber-200 shadow-sm animate-in fade-in">
+          <div className="flex items-center gap-2.5">
+            <span className="text-xl">🚀</span>
+            <div>
+              <span className="font-bold text-white block">
+                Активен режим кастомизации / Демо: «{brand.name}»
+              </span>
+              <span className="text-amber-300/80">
+                Вы можете сохранить эти настройки как постоянный бренд сайта в один клик, либо сбросить их к исходным.
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              size="sm"
+              onClick={async () => {
+                await handleSaveBrand(brand);
+                alert(`Бренд «${brand.name}» успешно сохранен как постоянный бренд автоцентра!`);
+              }}
+              className="h-8 px-4 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-black shadow-md"
+            >
+              Сохранить как основной бренд
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => {
+                resetDemo();
+                window.location.reload();
+              }}
+              className="h-8 px-3 text-xs text-slate-300 hover:text-white"
+            >
+              Сбросить демо
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Контент активного таба */}
       {activeTab === "dashboard" && (

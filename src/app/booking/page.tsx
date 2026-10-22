@@ -12,14 +12,13 @@ import { Check } from "lucide-react";
 import { useBrand } from "@/context/BrandContext";
 
 function BookingContent() {
-  const { brand: contextBrand } = useBrand();
+  const { brand } = useBrand();
   const searchParams = useSearchParams();
   const initialCatId = searchParams.get("categoryId") || "";
   const initialSrvId = searchParams.get("serviceId") || "";
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [services, setServices] = useState<Service[]>([]);
-  const [brand, setBrand] = useState<BrandSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Состояние шагов мастера
@@ -36,20 +35,17 @@ function BookingContent() {
   useEffect(() => {
     async function loadData() {
       try {
-        const [catsRes, srvsRes, brandRes] = await Promise.all([
+        const [catsRes, srvsRes] = await Promise.all([
           fetch("/api/categories"),
           fetch("/api/services"),
-          fetch("/api/brand"),
         ]);
 
-        if (catsRes.ok && srvsRes.ok && brandRes.ok) {
+        if (catsRes.ok && srvsRes.ok) {
           const catsData: Category[] = await catsRes.json();
           const srvsData: Service[] = await srvsRes.json();
-          const brandData: BrandSettings = await brandRes.json();
 
           setCategories(catsData);
           setServices(srvsData);
-          setBrand(contextBrand || brandData);
 
           // Проверка прямых переходов по query-параметрам
           if (initialSrvId) {

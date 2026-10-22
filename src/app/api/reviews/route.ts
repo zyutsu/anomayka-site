@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
-import { getDatabase, saveDatabase } from '@/lib/db';
+import { getDatabaseAsync, saveDatabaseAsync } from '@/lib/db';
 import { ReviewItem } from '@/lib/types';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const db = getDatabase();
+    const db = await getDatabaseAsync();
     return NextResponse.json(db.reviews || []);
   } catch (error) {
     return NextResponse.json({ error: 'Ошибка получения отзывов' }, { status: 500 });
@@ -20,7 +22,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Текст отзыва обязателен' }, { status: 400 });
     }
 
-    const db = getDatabase();
+    const db = await getDatabaseAsync();
     const newReview: ReviewItem = {
       id: `rev-${Date.now()}`,
       author: (author || 'Клиент').trim(),
@@ -48,7 +50,7 @@ export async function POST(req: Request) {
       }
     }
 
-    saveDatabase(db);
+    await saveDatabaseAsync(db);
 
     return NextResponse.json({ success: true, review: newReview });
   } catch (error) {

@@ -17,6 +17,11 @@ export function AdminBrandSettings({ brand, onSaveBrand }: AdminBrandSettingsPro
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
+  // Синхронизация формы при изменении бренда извне
+  React.useEffect(() => {
+    setForm({ ...brand });
+  }, [brand]);
+
   const handleResetColors = async () => {
     const updated = {
       ...form,

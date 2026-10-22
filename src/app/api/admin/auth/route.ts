@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { getDatabase, saveDatabase } from '@/lib/db';
+import { getDatabaseAsync, saveDatabaseAsync } from '@/lib/db';
+
+export const dynamic = 'force-dynamic';
 
 // В памяти храним сессии и счетчик неудачных попыток входа (защита от брутфорса)
 interface SessionData {
@@ -76,7 +78,7 @@ export async function POST(req: Request) {
     const { email, password } = await req.json();
     const cleanEmail = (email || '').toLowerCase().trim();
 
-    const db = getDatabase();
+    const db = await getDatabaseAsync();
     const admin = db.admins.find((a) => a.email.toLowerCase() === cleanEmail);
 
     if (!admin || !verifyPassword(password, admin.passwordHash)) {
@@ -147,7 +149,7 @@ export async function PATCH(req: Request) {
       );
     }
 
-    const db = getDatabase();
+    const db = await getDatabaseAsync();
     const cleanEmail = (email || 'admin@anomayka.ru').toLowerCase().trim();
     const adminIndex = db.admins.findIndex((a) => a.email.toLowerCase() === cleanEmail);
 
@@ -163,7 +165,7 @@ export async function PATCH(req: Request) {
     // Сохраняем надежный хэш нового пароля
     admin.passwordHash = hashPassword(newPassword);
     db.admins[adminIndex] = admin;
-    saveDatabase(db);
+    await saveDatabaseAsync(db);
 
     return NextResponse.json({
       success: true,

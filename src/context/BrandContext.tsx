@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { BrandSettings } from "@/lib/types";
 
 export const COLOR_PRESETS: Record<string, string> = {
@@ -23,9 +23,12 @@ interface BrandContextValue {
   demoType: string;
   demoRibbon: boolean;
   resetDemo: () => void;
+  updateBrand: (updated: Partial<BrandSettings>) => void;
 }
 
 const BrandContext = createContext<BrandContextValue | undefined>(undefined);
+
+const DEMO_STORAGE_KEY = "anomayka_demo_brand";
 
 export function BrandProvider({
   children,
@@ -37,14 +40,47 @@ export function BrandProvider({
   const [brand, setBrand] = useState<BrandSettings>(initialBrand);
   const [isDemo, setIsDemo] = useState(false);
   const [demoType, setDemoType] = useState<string>("");
-  const [demoRibbon, setDemoRibbon] = useState(true);
 
-  // Считывание параметров из URL или sessionStorage
-  useEffect(() => {
+  // Функция применения оверрайда к бренду
+  const applyBrandOverride = useCallback((override: Partial<BrandSettings> & { demoType?: string }) => {
+    setBrand((prev) => ({
+      ...prev,
+      name: override.name || prev.name,
+      phone: override.phone || prev.phone,
+      phoneRaw: override.phoneRaw || (override.phone ? override.phone.replace(/\D/g, "") : prev.phoneRaw),
+      city: override.city || prev.city,
+      address: override.address || prev.address,
+      accentColor: override.accentColor || prev.accentColor,
+      primaryColor: override.primaryColor || prev.primaryColor,
+      logoUrl: override.logoUrl !== undefined ? override.logoUrl : prev.logoUrl,
+      slogan: override.slogan || prev.slogan,
+    }));
+
+    if (override.demoType) {
+      setDemoType(override.demoType);
+    }
+    setIsDemo(true);
+  }, []);
+
+  // Синхронизация из URL или localStorage
+  const syncBrand = useCallback(() => {
     if (typeof window === "undefined") return;
 
     try {
       const urlParams = new URLSearchParams(window.location.search);
+      const isReset = urlParams.get("demo") === "reset" || urlParams.get("reset") === "1";
+
+      if (isReset) {
+        localStorage.removeItem(DEMO_STORAGE_KEY);
+        sessionStorage.removeItem(DEMO_STORAGE_KEY);
+        setBrand(initialBrand);
+        setIsDemo(false);
+        setDemoType("");
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, "", cleanUrl);
+        return;
+      }
+
       const urlName = urlParams.get("name");
       const urlPhone = urlParams.get("phone");
       const urlCity = urlParams.get("city");
@@ -54,14 +90,11 @@ export function BrandProvider({
       const urlLogo = urlParams.get("logo");
       const urlSlogan = urlParams.get("slogan");
       const urlType = urlParams.get("type");
-      const urlRibbon = urlParams.get("ribbon");
       const isDemoFlag = urlParams.get("demo") === "1" || urlParams.get("demo") === "true";
 
       const hasUrlParams = Boolean(
         urlName || urlPhone || urlCity || urlAddress || urlColor || urlLogo || urlType || isDemoFlag
       );
-
-      let activeOverride: Partial<BrandSettings> & { demoType?: string; ribbon?: boolean } = {};
 
       if (hasUrlParams) {
         // Парсим цвет
@@ -77,7 +110,7 @@ export function BrandProvider({
           }
         }
 
-        activeOverride = {
+        const activeOverride: Partial<BrandSettings> & { demoType?: string } = {
           name: urlName || undefined,
           phone: urlPhone || undefined,
           phoneRaw: urlPhone ? urlPhone.replace(/\D/g, "") : undefined,
@@ -88,50 +121,55 @@ export function BrandProvider({
           logoUrl: urlLogo || undefined,
           slogan: urlSlogan || undefined,
           demoType: urlType || "",
-          ribbon: urlRibbon !== "0",
         };
 
-        // Сохраняем в sessionStorage для сохранения при переходах по страницам
-        sessionStorage.setItem("anomayka_demo_brand", JSON.stringify(activeOverride));
-        setIsDemo(true);
+        // Сохраняем в localStorage для надежного сохранения между вкладками и перезагрузками
+        localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(activeOverride));
+        sessionStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(activeOverride));
+        applyBrandOverride(activeOverride);
       } else {
-        // Проверяем сохраненный сессионный оверрайд
-        const saved = sessionStorage.getItem("anomayka_demo_brand");
+        // Проверяем сохраненный оверрайд из localStorage
+        const saved = localStorage.getItem(DEMO_STORAGE_KEY) || sessionStorage.getItem(DEMO_STORAGE_KEY);
         if (saved) {
           try {
-            activeOverride = JSON.parse(saved);
-            setIsDemo(true);
+            const parsed = JSON.parse(saved);
+            if (parsed && typeof parsed === "object") {
+              applyBrandOverride(parsed);
+            }
           } catch (e) {
-            sessionStorage.removeItem("anomayka_demo_brand");
+            localStorage.removeItem(DEMO_STORAGE_KEY);
+            sessionStorage.removeItem(DEMO_STORAGE_KEY);
           }
-        }
-      }
-
-      if (Object.keys(activeOverride).length > 0) {
-        setBrand((prev) => ({
-          ...prev,
-          name: activeOverride.name || prev.name,
-          phone: activeOverride.phone || prev.phone,
-          phoneRaw: activeOverride.phoneRaw || prev.phoneRaw,
-          city: activeOverride.city || prev.city,
-          address: activeOverride.address || prev.address,
-          accentColor: activeOverride.accentColor || prev.accentColor,
-          primaryColor: activeOverride.primaryColor || prev.primaryColor,
-          logoUrl: activeOverride.logoUrl !== undefined ? activeOverride.logoUrl : prev.logoUrl,
-          slogan: activeOverride.slogan || prev.slogan,
-        }));
-
-        if (activeOverride.demoType) {
-          setDemoType(activeOverride.demoType);
-        }
-        if (activeOverride.ribbon !== undefined) {
-          setDemoRibbon(activeOverride.ribbon);
         }
       }
     } catch (e) {
       console.error("Failed to parse demo params", e);
     }
-  }, [initialBrand]);
+  }, [initialBrand, applyBrandOverride]);
+
+  useEffect(() => {
+    syncBrand();
+
+    // Слушаем изменение маршрутов и popstate
+    const handlePopState = () => syncBrand();
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [syncBrand]);
+
+  // Метод для обновления бренда из любого компонента (например, после загрузки логотипа)
+  const updateBrand = (updated: Partial<BrandSettings>) => {
+    setBrand((prev) => {
+      const merged = { ...prev, ...updated };
+      if (typeof window !== "undefined" && isDemo) {
+        try {
+          const saved = localStorage.getItem(DEMO_STORAGE_KEY);
+          const currentOverride = saved ? JSON.parse(saved) : {};
+          localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify({ ...currentOverride, ...updated }));
+        } catch (e) {}
+      }
+      return merged;
+    });
+  };
 
   // Применение CSS-переменных темы (акцентный цвет, фон, контрастность)
   useEffect(() => {
@@ -210,8 +248,8 @@ export function BrandProvider({
 
   const resetDemo = () => {
     if (typeof window !== "undefined") {
-      sessionStorage.removeItem("anomayka_demo_brand");
-      // Очищаем параметры из адресной строки без перезагрузки страницы
+      localStorage.removeItem(DEMO_STORAGE_KEY);
+      sessionStorage.removeItem(DEMO_STORAGE_KEY);
       const cleanUrl = window.location.pathname;
       window.history.replaceState({}, "", cleanUrl);
     }
@@ -228,6 +266,7 @@ export function BrandProvider({
         demoType,
         demoRibbon: false,
         resetDemo,
+        updateBrand,
       }}
     >
       {children}

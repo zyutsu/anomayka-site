@@ -1,13 +1,15 @@
 import { NextResponse } from 'next/server';
-import { getDatabase, saveDatabase } from '@/lib/db';
+import { getDatabaseAsync, saveDatabaseAsync } from '@/lib/db';
 import { Service } from '@/lib/types';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const categoryId = searchParams.get('categoryId');
   const all = searchParams.get('all') === 'true';
 
-  const db = getDatabase();
+  const db = await getDatabaseAsync();
   let services = db.services;
 
   if (!all) {
@@ -24,7 +26,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const serviceData: Service = await req.json();
-    const db = getDatabase();
+    const db = await getDatabaseAsync();
 
     const existingIndex = db.services.findIndex((s) => s.id === serviceData.id);
     if (existingIndex >= 0) {
@@ -41,8 +43,8 @@ export async function POST(req: Request) {
       db.services.push(newService);
     }
 
-    saveDatabase(db);
-    return NextResponse.json({ success: true, service: serviceData });
+    await saveDatabaseAsync(db);
+    return NextResponse.json({ success: true, service: serviceData, services: db.services });
   } catch (error) {
     return NextResponse.json({ error: 'Ошибка сохранения услуги' }, { status: 500 });
   }
@@ -56,10 +58,10 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: 'ID не указан' }, { status: 400 });
     }
 
-    const db = getDatabase();
+    const db = await getDatabaseAsync();
     db.services = db.services.filter((s) => s.id !== id);
-    saveDatabase(db);
-    return NextResponse.json({ success: true });
+    await saveDatabaseAsync(db);
+    return NextResponse.json({ success: true, services: db.services });
   } catch (error) {
     return NextResponse.json({ error: 'Ошибка удаления услуги' }, { status: 500 });
   }

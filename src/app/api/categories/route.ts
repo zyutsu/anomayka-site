@@ -1,16 +1,18 @@
 import { NextResponse } from 'next/server';
-import { getDatabase, saveDatabase } from '@/lib/db';
+import { getDatabaseAsync, saveDatabaseAsync } from '@/lib/db';
 import { Category } from '@/lib/types';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
-  const db = getDatabase();
+  const db = await getDatabaseAsync();
   return NextResponse.json(db.categories.sort((a, b) => a.order - b.order));
 }
 
 export async function POST(req: Request) {
   try {
     const categoryData: Category = await req.json();
-    const db = getDatabase();
+    const db = await getDatabaseAsync();
 
     const existingIndex = db.categories.findIndex((c) => c.id === categoryData.id);
     if (existingIndex >= 0) {
@@ -28,7 +30,7 @@ export async function POST(req: Request) {
       db.categories.push(newCat);
     }
 
-    saveDatabase(db);
+    await saveDatabaseAsync(db);
     return NextResponse.json({ success: true, categories: db.categories });
   } catch (error) {
     return NextResponse.json({ error: 'Ошибка сохранения категории' }, { status: 500 });
@@ -48,12 +50,12 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: 'ID категории обязателен' }, { status: 400 });
     }
 
-    const db = getDatabase();
+    const db = await getDatabaseAsync();
     db.categories = db.categories.filter((c) => c.id !== id);
     // Также удаляем связанные услуги, относящиеся к этой категории
     db.services = db.services.filter((s) => s.categoryId !== id);
 
-    saveDatabase(db);
+    await saveDatabaseAsync(db);
     return NextResponse.json({
       success: true,
       categories: db.categories,

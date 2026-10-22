@@ -28,6 +28,7 @@ export function AdminServices({
   const [selectedCategoryTab, setSelectedCategoryTab] = useState<string>("all");
   const [editingService, setEditingService] = useState<Partial<Service> | null>(null);
   const [editingCategory, setEditingCategory] = useState<Partial<Category> | null>(null);
+  const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
 
   const filteredServices =
     selectedCategoryTab === "all"
@@ -101,6 +102,14 @@ export function AdminServices({
         </div>
 
         <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => setIsCategoryManagerOpen(true)}
+            className="text-xs rounded-xl"
+          >
+            Категории ({categories.length})
+          </Button>
           <Button
             size="sm"
             variant="secondary"
@@ -500,6 +509,119 @@ export function AdminServices({
           </div>
         </div>
       )}
-    </div>
+    
+      {/* Модальное окно быстрого управления всеми категориями */}
+      {isCategoryManagerOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
+          <div className="w-full max-w-lg rounded-3xl bg-brand-surface border border-brand-border p-6 space-y-5 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-brand-border pb-3">
+              <div>
+                <h3 className="text-base font-bold text-theme-title">
+                  Список категорий ({categories.length})
+                </h3>
+                <p className="text-xs text-theme-muted">
+                  Здесь можно быстро отредактировать или удалить любую категорию
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setIsCategoryManagerOpen(false)}
+                className="text-xs"
+              >
+                ✕
+              </Button>
+            </div>
+
+            <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
+              {categories.length === 0 ? (
+                <div className="text-center py-6 text-xs text-theme-muted">
+                  Категорий пока нет. Нажмите «Добавить новую категорию» ниже.
+                </div>
+              ) : (
+                categories.map((c) => {
+                  const count = services.filter((s) => s.categoryId === c.id).length;
+                  return (
+                    <div
+                      key={c.id}
+                      className="p-3.5 rounded-2xl bg-black/30 border border-brand-border flex items-center justify-between gap-3 text-xs"
+                    >
+                      <div className="space-y-0.5">
+                        <div className="font-bold text-theme-title text-sm">{c.title}</div>
+                        <div className="text-[11px] text-theme-muted">
+                          Услуг в категории: {count}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => {
+                            setEditingCategory(c);
+                            setIsCategoryManagerOpen(false);
+                          }}
+                          className="h-8 px-3 text-xs rounded-xl"
+                        >
+                          <Edit2 className="w-3.5 h-3.5 mr-1 text-brand-accent" />
+                          Изменить
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={async () => {
+                            if (
+                              confirm(
+                                'Точно удалить категорию «' + c.title + '»? Все связанные услуги (' + count + ' шт.) также будут удалены.'
+                              )
+                            ) {
+                              await onDeleteCategory(c.id);
+                              if (selectedCategoryTab === c.id) {
+                                setSelectedCategoryTab('all');
+                              }
+                            }
+                          }}
+                          className="h-8 px-3 text-xs rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 mr-1" />
+                          Удалить
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            <div className="pt-2 border-t border-brand-border flex justify-between items-center">
+              <Button
+                size="sm"
+                onClick={() => {
+                  setEditingCategory({
+                    id: '',
+                    title: '',
+                    description: '',
+                    icon: 'Wrench',
+                    imageUrl: '',
+                    isActive: true,
+                  });
+                  setIsCategoryManagerOpen(false);
+                }}
+                className="text-xs rounded-xl font-bold"
+              >
+                <Plus className="w-3.5 h-3.5 mr-1" /> Новая категория
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => setIsCategoryManagerOpen(false)}
+                className="text-xs"
+              >
+                Готово
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+</div>
   );
 }
