@@ -45,7 +45,9 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
+    const isDemo = req.headers.get('x-demo-mode') === '1' || new URL(req.url).searchParams.get('demo') === '1';
     const body = await req.json();
+    const effectiveIsDemo = isDemo || Boolean(body.isDemo);
     const db = await getDatabaseAsync();
 
     // Сценарий 1: Заказ обратного звонка / Сложный случай
@@ -80,6 +82,15 @@ export async function POST(req: Request) {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
+
+      if (effectiveIsDemo) {
+        return NextResponse.json({
+          success: true,
+          demo: true,
+          booking: newCallBooking,
+          message: 'Заявка на звонок принята (в демо-режиме)! Мастер свяжется с вами в течение 5 минут.',
+        });
+      }
 
       db.bookings.push(newCallBooking);
       await saveDatabaseAsync(db);
@@ -139,6 +150,15 @@ export async function POST(req: Request) {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
+
+    if (effectiveIsDemo) {
+      return NextResponse.json({
+        success: true,
+        demo: true,
+        booking: newBooking,
+        message: 'Запись успешно создана и подтверждена (в демо-режиме)!',
+      });
+    }
 
     db.bookings.push(newBooking);
     await saveDatabaseAsync(db);

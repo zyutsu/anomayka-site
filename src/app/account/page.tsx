@@ -8,8 +8,10 @@ import { User, Phone, Calendar, Clock, Car, Check, X, RefreshCw, AlertCircle, Ar
 import { formatPrice, formatDuration, formatDateRu } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useBrand } from "@/context/BrandContext";
 
 function AccountContent() {
+  const { isDemo } = useBrand();
   const searchParams = useSearchParams();
   const initialPhone = searchParams.get("phone") || "";
 
@@ -79,9 +81,25 @@ function AccountContent() {
     setIsLoading(true);
     setErrorMsg("");
     try {
-      const res = await fetch(`/api/bookings?phone=${encodeURIComponent(targetPhone)}`);
+      const res = await fetch(`/api/bookings?phone=${encodeURIComponent(targetPhone)}`, {
+        headers: isDemo ? { "x-demo-mode": "1" } : {},
+      });
       if (res.ok) {
-        const data: Booking[] = await res.json();
+        let data: Booking[] = await res.json();
+        // В демо-режиме подгружаем созданные в этой сессии заявки
+        if (isDemo && typeof window !== "undefined") {
+          try {
+            const stored = sessionStorage.getItem("anomayka_demo_bookings");
+            if (stored) {
+              const demoList: Booking[] = JSON.parse(stored);
+              const cleanTarget = targetPhone.replace(/\D/g, "");
+              const matched = demoList.filter((b) =>
+                (b.clientPhone || "").replace(/\D/g, "").includes(cleanTarget)
+              );
+              data = [...matched, ...data];
+            }
+          } catch (e) {}
+        }
         setBookings(data);
         setIsAuthenticated(true);
       } else {
@@ -115,8 +133,11 @@ function AccountContent() {
     try {
       const res = await fetch(`/api/bookings/${id}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "cancelled" }),
+        headers: {
+          "Content-Type": "application/json",
+          ...(isDemo ? { "x-demo-mode": "1" } : {}),
+        },
+        body: JSON.stringify({ status: "cancelled", isDemo }),
       });
 
       if (res.ok) {
@@ -138,8 +159,11 @@ function AccountContent() {
     try {
       const res = await fetch(`/api/bookings/${rescheduleBooking.id}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: newDate, time: newTime }),
+        headers: {
+          "Content-Type": "application/json",
+          ...(isDemo ? { "x-demo-mode": "1" } : {}),
+        },
+        body: JSON.stringify({ date: newDate, time: newTime, isDemo }),
       });
 
       const result = await res.json();

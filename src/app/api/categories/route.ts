@@ -11,7 +11,18 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    const isDemo = req.headers.get('x-demo-mode') === '1' || new URL(req.url).searchParams.get('demo') === '1';
     const categoryData: Category = await req.json();
+
+    if (isDemo) {
+      return NextResponse.json({
+        success: true,
+        demo: true,
+        category: categoryData,
+        message: 'Демо-режим: изменения изолированы и не затрагивают основной сайт'
+      });
+    }
+
     const db = await getDatabaseAsync();
 
     const existingIndex = db.categories.findIndex((c) => c.id === categoryData.id);
@@ -39,6 +50,7 @@ export async function POST(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
+    const isDemo = req.headers.get('x-demo-mode') === '1' || new URL(req.url).searchParams.get('demo') === '1';
     const { searchParams } = new URL(req.url);
     let id = searchParams.get('id');
     if (!id) {
@@ -48,6 +60,15 @@ export async function DELETE(req: Request) {
 
     if (!id) {
       return NextResponse.json({ error: 'ID категории обязателен' }, { status: 400 });
+    }
+
+    if (isDemo) {
+      return NextResponse.json({
+        success: true,
+        demo: true,
+        id,
+        message: 'Демо-режим: категория удалена в песочнице и не затрагивает основной сайт'
+      });
     }
 
     const db = await getDatabaseAsync();

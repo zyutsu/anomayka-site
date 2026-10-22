@@ -89,18 +89,38 @@ export default function AdminPage() {
   const fetchAllData = async () => {
     setIsLoading(true);
     try {
+      const demoHeaders = isDemo ? { "x-demo-mode": "1" } : {};
       const [bRes, sRes, cRes, brRes] = await Promise.all([
-        fetch("/api/bookings"),
-        fetch("/api/services?all=true"),
-        fetch("/api/categories"),
-        fetch("/api/brand"),
+        fetch("/api/bookings", { headers: demoHeaders }),
+        fetch("/api/services?all=true", { headers: demoHeaders }),
+        fetch("/api/categories", { headers: demoHeaders }),
+        fetch("/api/brand", { headers: demoHeaders }),
       ]);
 
       if (bRes.ok && sRes.ok && cRes.ok && brRes.ok) {
-        setBookings(await bRes.json());
-        setServices(await sRes.json());
-        setCategories(await cRes.json());
+        let loadedBookings: Booking[] = await bRes.json();
+        let loadedServices: Service[] = await sRes.json();
+        let loadedCategories: Category[] = await cRes.json();
         const serverBrand = await brRes.json();
+
+        // В демо-режиме загружаем изолированную песочницу текущей сессии
+        if (isDemo && typeof window !== "undefined") {
+          try {
+            const demoCats = sessionStorage.getItem("anomayka_demo_categories");
+            if (demoCats) loadedCategories = JSON.parse(demoCats);
+
+            const demoSrvs = sessionStorage.getItem("anomayka_demo_services");
+            if (demoSrvs) loadedServices = JSON.parse(demoSrvs);
+
+            const demoBooks = sessionStorage.getItem("anomayka_demo_bookings");
+            if (demoBooks) loadedBookings = [...JSON.parse(demoBooks), ...loadedBookings];
+          } catch (e) {}
+        }
+
+        setBookings(loadedBookings);
+        setServices(loadedServices);
+        setCategories(loadedCategories);
+
         // В демо-режиме отображаем демо-бренд, иначе серверный
         if (isDemo && contextBrand) {
           setBrand(contextBrand);
@@ -197,15 +217,30 @@ export default function AdminPage() {
   // Действия над заявками
   const handleUpdateBookingStatus = async (id: string, status: BookingStatus, notes?: string) => {
     try {
+      setBookings((prev) => {
+        const updated = prev.map((b) => (b.id === id ? { ...b, status, ...(notes !== undefined ? { notes } : {}) } : b));
+        if (isDemo && typeof window !== "undefined") {
+          try {
+            sessionStorage.setItem("anomayka_demo_bookings", JSON.stringify(updated));
+          } catch (e) {}
+        }
+        return updated;
+      });
+
       const res = await fetch(`/api/bookings/${id}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status, ...(notes !== undefined ? { notes } : {}) }),
+        headers: {
+          "Content-Type": "application/json",
+          ...(isDemo ? { "x-demo-mode": "1" } : {}),
+        },
+        body: JSON.stringify({ status, ...(notes !== undefined ? { notes } : {}), isDemo }),
       });
 
       if (res.ok) {
         const result = await res.json();
-        setBookings((prev) => prev.map((b) => (b.id === id ? result.booking : b)));
+        if (result.booking) {
+          setBookings((prev) => prev.map((b) => (b.id === id ? result.booking : b)));
+        }
       }
     } catch (e) {
       alert("Ошибка обновления статуса");
@@ -213,10 +248,23 @@ export default function AdminPage() {
   };
 
   const handleRescheduleBooking = async (id: string, date: string, time: string) => {
+    setBookings((prev) => {
+      const updated = prev.map((b) => (b.id === id ? { ...b, date, time } : b));
+      if (isDemo && typeof window !== "undefined") {
+        try {
+          sessionStorage.setItem("anomayka_demo_bookings", JSON.stringify(updated));
+        } catch (e) {}
+      }
+      return updated;
+    });
+
     const res = await fetch(`/api/bookings/${id}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date, time }),
+      headers: {
+        "Content-Type": "application/json",
+        ...(isDemo ? { "x-demo-mode": "1" } : {}),
+      },
+      body: JSON.stringify({ date, time, isDemo }),
     });
 
     const result = await res.json();
@@ -224,14 +272,19 @@ export default function AdminPage() {
       throw new Error(result.error || "Слот занят");
     }
 
-    setBookings((prev) => prev.map((b) => (b.id === id ? result.booking : b)));
+    if (result.booking) {
+      setBookings((prev) => prev.map((b) => (b.id === id ? result.booking : b)));
+    }
   };
 
   const handleAddManualBooking = async (formData: any) => {
     const res = await fetch("/api/bookings", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formData),
+      headers: {
+        "Content-Type": "application/json",
+        ...(isDemo ? { "x-demo-mode": "1" } : {}),
+      },
+      body: JSON.stringify({ ...formData, isDemo }),
     });
 
     const result = await res.json();
@@ -239,26 +292,39 @@ export default function AdminPage() {
       throw new Error(result.error || "Ошибка бронирования слота");
     }
 
-    setBookings((prev) => [result.booking, ...prev]);
+    setBookings((prev) => {
+      const updated = [result.booking, ...prev];
+      if (isDemo && typeof window !== "undefined") {
+        try {
+          sessionStorage.setItem("anomayka_demo_bookings", JSON.stringify(updated));
+        } catch (e) {}
+      }
+      return updated;
+    });
   };
 
   // Действия над услугами
   const handleSaveService = async (srv: Service) => {
     try {
-      // Оптимистичное обновление UI
+      // Оптимистичное обновление UI и песочницы демо
       setServices((prev) => {
         const idx = prev.findIndex((s) => s.id === srv.id);
-        if (idx >= 0) {
-          const updated = [...prev];
-          updated[idx] = srv;
-          return updated;
+        const updated = idx >= 0 ? [...prev] : [srv, ...prev];
+        if (idx >= 0) updated[idx] = srv;
+        if (isDemo && typeof window !== "undefined") {
+          try {
+            sessionStorage.setItem("anomayka_demo_services", JSON.stringify(updated));
+          } catch (e) {}
         }
-        return [srv, ...prev];
+        return updated;
       });
 
       const res = await fetch("/api/services", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(isDemo ? { "x-demo-mode": "1" } : {}),
+        },
         body: JSON.stringify(srv),
       });
 
@@ -268,7 +334,7 @@ export default function AdminPage() {
       }
 
       const data = await res.json();
-      if (data.services) {
+      if (!isDemo && data.services) {
         setServices(data.services);
       }
     } catch (err: any) {
@@ -279,14 +345,28 @@ export default function AdminPage() {
 
   const handleDeleteService = async (id: string) => {
     try {
-      setServices((prev) => prev.filter((s) => s.id !== id));
-      const res = await fetch(`/api/services?id=${id}`, { method: "DELETE" });
+      setServices((prev) => {
+        const updated = prev.filter((s) => s.id !== id);
+        if (isDemo && typeof window !== "undefined") {
+          try {
+            sessionStorage.setItem("anomayka_demo_services", JSON.stringify(updated));
+          } catch (e) {}
+        }
+        return updated;
+      });
+
+      const res = await fetch(`/api/services?id=${id}`, {
+        method: "DELETE",
+        headers: isDemo ? { "x-demo-mode": "1" } : {},
+      });
+
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error || "Ошибка удаления");
       }
+
       const data = await res.json();
-      if (data.services) {
+      if (!isDemo && data.services) {
         setServices(data.services);
       }
     } catch (err: any) {
@@ -299,17 +379,22 @@ export default function AdminPage() {
     try {
       setCategories((prev) => {
         const idx = prev.findIndex((c) => c.id === cat.id);
-        if (idx >= 0) {
-          const updated = [...prev];
-          updated[idx] = cat;
-          return updated;
+        const updated = idx >= 0 ? [...prev] : [...prev, cat];
+        if (idx >= 0) updated[idx] = cat;
+        if (isDemo && typeof window !== "undefined") {
+          try {
+            sessionStorage.setItem("anomayka_demo_categories", JSON.stringify(updated));
+          } catch (e) {}
         }
-        return [...prev, cat];
+        return updated;
       });
 
       const res = await fetch("/api/categories", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(isDemo ? { "x-demo-mode": "1" } : {}),
+        },
         body: JSON.stringify(cat),
       });
 
@@ -319,7 +404,7 @@ export default function AdminPage() {
       }
 
       const data = await res.json();
-      if (data.categories) {
+      if (!isDemo && data.categories) {
         setCategories(data.categories);
       }
     } catch (err: any) {
@@ -330,20 +415,42 @@ export default function AdminPage() {
 
   const handleDeleteCategory = async (id: string) => {
     try {
-      // 1. Оптимистично удаляем категорию и связанные услуги
-      setCategories((prev) => prev.filter((c) => c.id !== id));
-      setServices((prev) => prev.filter((s) => s.categoryId !== id));
+      // 1. Удаляем категорию и связанные услуги локально в песочнице
+      setCategories((prev) => {
+        const updated = prev.filter((c) => c.id !== id);
+        if (isDemo && typeof window !== "undefined") {
+          try {
+            sessionStorage.setItem("anomayka_demo_categories", JSON.stringify(updated));
+          } catch (e) {}
+        }
+        return updated;
+      });
 
-      const res = await fetch(`/api/categories?id=${id}`, { method: "DELETE" });
+      setServices((prev) => {
+        const updated = prev.filter((s) => s.categoryId !== id);
+        if (isDemo && typeof window !== "undefined") {
+          try {
+            sessionStorage.setItem("anomayka_demo_services", JSON.stringify(updated));
+          } catch (e) {}
+        }
+        return updated;
+      });
+
+      const res = await fetch(`/api/categories?id=${id}`, {
+        method: "DELETE",
+        headers: isDemo ? { "x-demo-mode": "1" } : {},
+      });
+
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error || "Ошибка удаления");
       }
+
       const data = await res.json();
-      if (data.categories) {
+      if (!isDemo && data.categories) {
         setCategories(data.categories);
       }
-      if (data.services) {
+      if (!isDemo && data.services) {
         setServices(data.services);
       }
     } catch (err: any) {
@@ -363,7 +470,10 @@ export default function AdminPage() {
 
       const res = await fetch("/api/brand", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(isDemo ? { "x-demo-mode": "1" } : {}),
+        },
         body: JSON.stringify(settings),
       });
 
@@ -373,12 +483,12 @@ export default function AdminPage() {
       }
 
       const data = await res.json();
-      if (data.brand) {
+      if (!isDemo && data.brand) {
         setBrand(data.brand);
         updateContextBrand(data.brand);
       }
     } catch (err: any) {
-      alert("Не удалось сохранить настройки бренда: " + err.message);
+      alert("Ошибка обновления бренда: " + err.message);
     }
   };
 
@@ -451,6 +561,20 @@ export default function AdminPage() {
   // АВТОРИЗОВАННАЯ АДМИН-ПАНЕЛЬ
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      {isDemo && (
+        <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-amber-300 shadow-sm">
+          <div className="flex items-center gap-2.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse shrink-0" />
+            <span>
+              <strong>Режим демонстрации (Песочница):</strong> любые изменения услуг, цен, категорий и статусов заявок изолированы внутри этой сессии и <u>не влияют</u> на реальный сайт.
+            </span>
+          </div>
+          <span className="text-[11px] text-amber-400/80 font-mono shrink-0">
+            Изоляция: активна
+          </span>
+        </div>
+      )}
+
       {/* Шапка панели управления */}
       <div className="p-5 rounded-2xl bg-brand-surface border border-brand-border flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
         <div className="flex items-center gap-3.5">

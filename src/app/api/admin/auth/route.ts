@@ -149,6 +149,15 @@ export async function PATCH(req: Request) {
       );
     }
 
+    const isDemo = req.headers.get('x-demo-mode') === '1' || new URL(req.url).searchParams.get('demo') === '1';
+    if (isDemo) {
+      return NextResponse.json({
+        success: true,
+        demo: true,
+        message: 'Пароль успешно обновлен (в демо-режиме)',
+      });
+    }
+
     const db = await getDatabaseAsync();
     const cleanEmail = (email || 'admin@anomayka.ru').toLowerCase().trim();
     const adminIndex = db.admins.findIndex((a) => a.email.toLowerCase() === cleanEmail);

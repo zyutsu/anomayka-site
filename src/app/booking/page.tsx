@@ -12,7 +12,7 @@ import { Check } from "lucide-react";
 import { useBrand } from "@/context/BrandContext";
 
 function BookingContent() {
-  const { brand } = useBrand();
+  const { brand, isDemo } = useBrand();
   const searchParams = useSearchParams();
   const initialCatId = searchParams.get("categoryId") || "";
   const initialSrvId = searchParams.get("serviceId") || "";
@@ -113,11 +113,15 @@ function BookingContent() {
     try {
       const response = await fetch("/api/bookings", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(isDemo ? { "x-demo-mode": "1" } : {}),
+        },
         body: JSON.stringify({
           serviceId: selectedService.id,
           date: selectedDate,
           time: selectedTime,
+          isDemo,
           ...clientData,
         }),
       });
@@ -126,6 +130,16 @@ function BookingContent() {
 
       if (!response.ok) {
         throw new Error(result.error || "Ошибка при сохранении записи");
+      }
+
+      // В демо-режиме сохраняем бронь локально в сессию вкладки
+      if (isDemo && typeof window !== "undefined" && result.booking) {
+        try {
+          const stored = sessionStorage.getItem("anomayka_demo_bookings");
+          const list = stored ? JSON.parse(stored) : [];
+          list.unshift(result.booking);
+          sessionStorage.setItem("anomayka_demo_bookings", JSON.stringify(list));
+        } catch (e) {}
       }
 
       setCreatedBooking(result.booking);

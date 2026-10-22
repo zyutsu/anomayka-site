@@ -23,8 +23,25 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const isDemo = req.headers.get('x-demo-mode') === '1' || new URL(req.url).searchParams.get('demo') === '1';
     const { id } = await params;
     const body = await req.json();
+    const effectiveIsDemo = isDemo || Boolean(body.isDemo);
+
+    if (effectiveIsDemo) {
+      const updatedBooking = {
+        id,
+        ...body,
+        updatedAt: new Date().toISOString(),
+      };
+      return NextResponse.json({
+        success: true,
+        demo: true,
+        booking: updatedBooking,
+        message: 'Статус записи изменен (в демо-режиме)'
+      });
+    }
+
     const db = await getDatabaseAsync();
 
     const bookingIndex = db.bookings.findIndex((b) => b.id === id || b.code === id);

@@ -22,6 +22,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Текст отзыва обязателен' }, { status: 400 });
     }
 
+    const isDemo = req.headers.get('x-demo-mode') === '1' || new URL(req.url).searchParams.get('demo') === '1';
     const db = await getDatabaseAsync();
     const newReview: ReviewItem = {
       id: `rev-${Date.now()}`,
@@ -36,6 +37,10 @@ export async function POST(req: Request) {
         year: 'numeric',
       }),
     };
+
+    if (isDemo) {
+      return NextResponse.json({ success: true, demo: true, review: newReview });
+    }
 
     if (!Array.isArray(db.reviews)) {
       db.reviews = [];
