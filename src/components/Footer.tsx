@@ -9,6 +9,7 @@ import { useBrand } from "@/context/BrandContext";
 export function Footer({ brand: propBrand }: { brand?: BrandSettings }) {
   const brandContext = useBrand();
   const brand = brandContext?.brand || propBrand!;
+  const getDemoHref = brandContext?.getDemoHref || ((p: string) => p);
   return (
     <footer className="bg-[#06070a] border-t border-white/10 pt-16 pb-12 text-slate-400 text-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -59,27 +60,27 @@ export function Footer({ brand: propBrand }: { brand?: BrandSettings }) {
             <h4 className="text-xs font-semibold uppercase tracking-wider text-white">Разделы сайта</h4>
             <ul className="space-y-2 text-xs">
               <li>
-                <Link href="/services" className="hover:text-white transition-colors">
+                <Link href={getDemoHref("/services")} className="hover:text-white transition-colors">
                   Услуги и прайс-лист
                 </Link>
               </li>
               <li>
-                <Link href="/booking" className="hover:text-white transition-colors">
+                <Link href={getDemoHref("/booking")} className="hover:text-white transition-colors">
                   Онлайн-запись 24/7
                 </Link>
               </li>
               <li>
-                <Link href="/account" className="hover:text-white transition-colors">
+                <Link href={getDemoHref("/account")} className="hover:text-white transition-colors">
                   Личный кабинет / Перенос записи
                 </Link>
               </li>
               <li>
-                <Link href="/faq" className="hover:text-white transition-colors">
+                <Link href={getDemoHref("/faq")} className="hover:text-white transition-colors">
                   Вопросы и ответы (FAQ)
                 </Link>
               </li>
               <li>
-                <Link href="/contacts" className="hover:text-white transition-colors">
+                <Link href={getDemoHref("/contacts")} className="hover:text-white transition-colors">
                   Контакты и схема проезда
                 </Link>
               </li>
@@ -115,7 +116,7 @@ export function Footer({ brand: propBrand }: { brand?: BrandSettings }) {
             </p>
             <div className="pt-2 flex flex-col gap-2">
               <Link
-                href="/admin"
+                href={getDemoHref("/admin")}
                 className="inline-flex items-center gap-2 text-xs text-slate-400 hover:text-white transition-colors py-1"
               >
                 <Shield className="w-3.5 h-3.5 text-brand-accent" />
@@ -131,7 +132,7 @@ export function Footer({ brand: propBrand }: { brand?: BrandSettings }) {
           </div>
           <div className="flex items-center gap-6">
             <span>White-Label Multi-Tenant Ready</span>
-            <Link href="/admin" className="hover:text-slate-400 transition-colors">
+            <Link href={getDemoHref("/admin")} className="hover:text-slate-400 transition-colors">
               Вход для персонала
             </Link>
           </div>

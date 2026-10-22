@@ -11,6 +11,7 @@ import { useBrand } from "@/context/BrandContext";
 export function Navbar({ brand: propBrand }: { brand?: BrandSettings }) {
   const brandContext = useBrand();
   const brand = brandContext?.brand || propBrand!;
+  const getDemoHref = brandContext?.getDemoHref || ((p: string) => p);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
@@ -43,7 +44,7 @@ export function Navbar({ brand: propBrand }: { brand?: BrandSettings }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between gap-4">
           {/* Бренд и логотип */}
-          <Link href="/" className="flex items-center gap-3.5 group focus:outline-none">
+          <Link href={getDemoHref("/")} className="flex items-center gap-3.5 group focus:outline-none">
             <div className="relative w-11 h-11 sm:w-12 sm:h-12 rounded-xl overflow-hidden border border-brand-border bg-black/60 shadow-md group-hover:border-brand-accent transition-all flex items-center justify-center shrink-0">
               {brand.logoUrl ? (
                 <img
@@ -72,7 +73,7 @@ export function Navbar({ brand: propBrand }: { brand?: BrandSettings }) {
               return (
                 <Link
                   key={link.href}
-                  href={link.href}
+                  href={getDemoHref(link.href)}
                   className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all ${
                     isActive
                       ? "bg-brand-accent text-white shadow-sm shadow-brand-accent/30 font-semibold"
@@ -95,7 +96,7 @@ export function Navbar({ brand: propBrand }: { brand?: BrandSettings }) {
               <span>{brand.phone}</span>
             </a>
 
-            <Link href="/booking">
+            <Link href={getDemoHref("/booking")}>
               <Button size="sm" className="font-semibold shadow-md shadow-brand-accent/20">
                 <Calendar className="w-3.5 h-3.5" />
                 <span>Записаться</span>
@@ -103,7 +104,7 @@ export function Navbar({ brand: propBrand }: { brand?: BrandSettings }) {
             </Link>
 
             <Link
-              href="/admin"
+              href={getDemoHref("/admin")}
               className="p-2 text-theme-muted hover:text-theme-title hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors"
               title="Панель администратора"
             >
@@ -113,7 +114,7 @@ export function Navbar({ brand: propBrand }: { brand?: BrandSettings }) {
 
           {/* Мобильная кнопка меню */}
           <div className="flex sm:hidden items-center gap-2">
-            <Link href="/booking">
+            <Link href={getDemoHref("/booking")}>
               <Button size="sm" className="px-3 text-xs">
                 Запись
               </Button>
@@ -138,7 +139,7 @@ export function Navbar({ brand: propBrand }: { brand?: BrandSettings }) {
               return (
                 <Link
                   key={link.href}
-                  href={link.href}
+                  href={getDemoHref(link.href)}
                   onClick={() => setMobileMenuOpen(false)}
                   className={`flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-medium ${
                     isActive
@@ -167,7 +168,7 @@ export function Navbar({ brand: propBrand }: { brand?: BrandSettings }) {
                 {brand.workHours}
               </span>
               <Link
-                href="/admin"
+                href={getDemoHref("/admin")}
                 onClick={() => setMobileMenuOpen(false)}
                 className="text-theme-muted hover:text-theme-title flex items-center gap-1 underline underline-offset-4"
               >

@@ -17,7 +17,7 @@ export function ServicesCatalog({
   categories: Category[];
   services: Service[];
 }) {
-  const { brand, demoType } = useBrand();
+  const { brand, demoType, getDemoHref } = useBrand();
 
   // Фильтрация/сортировка по demoType, если задан
   const filteredCategories = React.useMemo(() => {
@@ -59,7 +59,7 @@ export function ServicesCatalog({
                   {category.description}
                 </p>
               </div>
-              <Link href={`/booking?categoryId=${category.id}`}>
+              <Link href={getDemoHref(`/booking?categoryId=${category.id}`)}>
                 <span className="text-xs font-semibold text-brand-accent hover:underline flex items-center gap-1 cursor-pointer">
                   Записаться в категорию <ArrowRight className="w-3.5 h-3.5" />
                 </span>
@@ -108,7 +108,7 @@ export function ServicesCatalog({
                         className="h-10 px-4 text-xs font-bold"
                       />
                     ) : (
-                      <Link href={`/booking?serviceId=${srv.id}`}>
+                      <Link href={getDemoHref(`/booking?serviceId=${srv.id}`)}>
                         <Button size="sm" className="text-xs font-bold px-5 h-10 rounded-xl cursor-pointer">
                           Записаться
                         </Button>

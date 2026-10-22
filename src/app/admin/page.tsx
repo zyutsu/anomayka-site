@@ -79,6 +79,13 @@ export default function AdminPage() {
     verifySession();
   }, []);
 
+  // В демо-режиме вкладка генератора демо скрыта от клиента
+  useEffect(() => {
+    if (isDemo && activeTab === "demo") {
+      setActiveTab("dashboard");
+    }
+  }, [isDemo, activeTab]);
+
   const fetchAllData = async () => {
     setIsLoading(true);
     try {
@@ -555,17 +562,19 @@ export default function AdminPage() {
             <span>Безопасность</span>
           </button>
 
-          <button
-            onClick={() => setActiveTab("demo")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-              activeTab === "demo"
-                ? "bg-brand-accent text-white shadow-sm"
-                : "text-amber-400 hover:text-amber-300 hover:bg-amber-400/10 font-bold"
-            }`}
-          >
-            <Share2 className="w-3.5 h-3.5 text-amber-400" />
-            <span>🚀 Продажи & Демо</span>
-          </button>
+          {!isDemo && (
+            <button
+              onClick={() => setActiveTab("demo")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                activeTab === "demo"
+                  ? "bg-brand-accent text-white shadow-sm"
+                  : "text-amber-400 hover:text-amber-300 hover:bg-amber-400/10 font-bold"
+              }`}
+            >
+              <Share2 className="w-3.5 h-3.5 text-amber-400" />
+              <span>🚀 Продажи & Демо</span>
+            </button>
+          )}
 
           <Button
             size="sm"
@@ -793,7 +802,7 @@ export default function AdminPage() {
         </div>
       )}
 
-      {activeTab === "demo" && brand && (
+      {!isDemo && activeTab === "demo" && brand && (
         <AdminDemoGenerator currentBrand={brand} />
       )}
 

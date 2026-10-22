@@ -54,6 +54,8 @@ interface BrandContextValue {
   isDemo: boolean;
   demoType: string;
   demoRibbon: boolean;
+  demoQuery: string;
+  getDemoHref: (path: string) => string;
   resetDemo: () => void;
   updateBrand: (updated: Partial<BrandSettings>) => void;
 }
@@ -83,6 +85,7 @@ export function BrandProvider({
   const [brand, setBrand] = useState<BrandSettings>(initialBrand);
   const [isDemo, setIsDemo] = useState(false);
   const [demoType, setDemoType] = useState<string>("");
+  const [demoQuery, setDemoQuery] = useState<string>("");
 
   // Функция применения оверрайда к бренду
   const applyBrandOverride = useCallback((override: Partial<BrandSettings> & { demoType?: string }) => {
@@ -116,24 +119,42 @@ export function BrandProvider({
     setIsDemo(true);
   }, []);
 
-  // Синхронизация из URL или localStorage
+  // Генератор безопасных внутренних ссылок с сохранением демо-параметров
+  const getDemoHref = useCallback(
+    (path: string): string => {
+      if (!isDemo || !demoQuery) return path;
+      if (
+        path.startsWith("tel:") ||
+        path.startsWith("mailto:") ||
+        path.startsWith("http://") ||
+        path.startsWith("https://") ||
+        path.startsWith("#")
+      ) {
+        return path;
+      }
+      const [pathname, search] = path.split("?");
+      if (!search) {
+        return `${pathname}?${demoQuery}`;
+      }
+      const existingParams = new URLSearchParams(search);
+      const demoParams = new URLSearchParams(demoQuery);
+      demoParams.forEach((val, key) => {
+        if (!existingParams.has(key)) {
+          existingParams.set(key, val);
+        }
+      });
+      return `${pathname}?${existingParams.toString()}`;
+    },
+    [isDemo, demoQuery]
+  );
+
+  // Синхронизация из URL или безопасной сессии вкладки
   const syncBrand = useCallback(() => {
     if (typeof window === "undefined") return;
 
     try {
       const urlParams = new URLSearchParams(window.location.search);
       const isReset = urlParams.get("demo") === "reset" || urlParams.get("reset") === "1";
-
-      if (isReset) {
-        localStorage.removeItem(DEMO_STORAGE_KEY);
-        sessionStorage.removeItem(DEMO_STORAGE_KEY);
-        setBrand(initialBrand);
-        setIsDemo(false);
-        setDemoType("");
-        const cleanUrl = window.location.pathname;
-        window.history.replaceState({}, "", cleanUrl);
-        return;
-      }
 
       const urlName = urlParams.get("name");
       const urlPhone = urlParams.get("phone");
@@ -149,6 +170,26 @@ export function BrandProvider({
       const hasUrlParams = Boolean(
         urlName || urlPhone || urlCity || urlAddress || urlColor || urlLogo || urlType || isDemoFlag
       );
+
+      // ЕСЛИ пользователь открыл главную страницу или админку по прямой чистой ссылке (без параметров),
+      // либо запросил сброс — гарантированно очищаем демо и показываем основной сайт!
+      const isDirectMainOrAdmin =
+        (window.location.pathname === "/" || window.location.pathname === "/admin") && !hasUrlParams;
+
+      if (isReset || isDirectMainOrAdmin) {
+        localStorage.removeItem(DEMO_STORAGE_KEY);
+        sessionStorage.removeItem(DEMO_STORAGE_KEY);
+        sessionStorage.removeItem("anomayka_demo_query");
+        setBrand(initialBrand);
+        setIsDemo(false);
+        setDemoType("");
+        setDemoQuery("");
+        if (isReset) {
+          const cleanUrl = window.location.pathname;
+          window.history.replaceState({}, "", cleanUrl);
+        }
+        return;
+      }
 
       if (hasUrlParams) {
         // Парсим цвет
@@ -181,29 +222,90 @@ export function BrandProvider({
           demoType: urlType || "",
         };
 
-        // Сохраняем в localStorage для стабильного сохранения между вкладками и страницами
-        localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(activeOverride));
+        // Формируем чистую query-строку для ссылок
+        const queryParams = new URLSearchParams();
+        queryParams.set("demo", "1");
+        if (urlName) queryParams.set("name", urlName);
+        if (urlPhone) queryParams.set("phone", urlPhone);
+        if (urlCity) queryParams.set("city", urlCity);
+        if (urlAddress) queryParams.set("address", urlAddress);
+        if (urlColor) queryParams.set("color", urlColor);
+        if (urlBg) queryParams.set("bg", urlBg);
+        if (urlLogo) queryParams.set("logo", urlLogo);
+        if (urlSlogan) queryParams.set("slogan", urlSlogan);
+        if (urlType) queryParams.set("type", urlType);
+        const qStr = queryParams.toString();
+
+        setDemoQuery(qStr);
+        // Сохраняем ТОЛЬКО в sessionStorage для переходов внутри текущей вкладки
         sessionStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(activeOverride));
+        sessionStorage.setItem("anomayka_demo_query", qStr);
+        // Полностью очищаем глобальный localStorage, чтобы он не засорял другие вкладки и прямые переходы
+        localStorage.removeItem(DEMO_STORAGE_KEY);
         applyBrandOverride(activeOverride);
       } else {
-        // Проверяем сохраненный оверрайд из localStorage
-        const saved = localStorage.getItem(DEMO_STORAGE_KEY) || sessionStorage.getItem(DEMO_STORAGE_KEY);
+        // Проверяем сохраненный оверрайд из sessionStorage (только для навигации внутри текущей вкладки)
+        const saved = sessionStorage.getItem(DEMO_STORAGE_KEY);
+        const savedQuery = sessionStorage.getItem("anomayka_demo_query") || "";
         if (saved) {
           try {
             const parsed = JSON.parse(saved);
             if (parsed && typeof parsed === "object") {
+              setDemoQuery(savedQuery);
               applyBrandOverride(parsed);
             }
           } catch (e) {
-            localStorage.removeItem(DEMO_STORAGE_KEY);
             sessionStorage.removeItem(DEMO_STORAGE_KEY);
+            sessionStorage.removeItem("anomayka_demo_query");
+            setBrand(initialBrand);
+            setIsDemo(false);
+            setDemoType("");
+            setDemoQuery("");
           }
+        } else {
+          setBrand(initialBrand);
+          setIsDemo(false);
+          setDemoType("");
+          setDemoQuery("");
         }
       }
     } catch (e) {
       console.error("Failed to parse demo params", e);
     }
   }, [initialBrand, applyBrandOverride]);
+
+  // Глобальный перехватчик кликов по внутренним ссылкам в режиме демо для сохранения параметров
+  useEffect(() => {
+    if (!isDemo || !demoQuery || typeof window === "undefined") return;
+
+    const handleAnchorClick = (e: MouseEvent) => {
+      const target = (e.target as HTMLElement)?.closest("a");
+      if (!target) return;
+      const href = target.getAttribute("href");
+      if (
+        !href ||
+        href.startsWith("http://") ||
+        href.startsWith("https://") ||
+        href.startsWith("tel:") ||
+        href.startsWith("mailto:") ||
+        href.startsWith("#")
+      ) {
+        return;
+      }
+
+      if (!href.includes("demo=") && !href.includes("name=")) {
+        const separator = href.includes("?") ? "&" : "?";
+        target.setAttribute("href", `${href}${separator}${demoQuery}`);
+      }
+    };
+
+    document.addEventListener("click", handleAnchorClick, true);
+    document.addEventListener("auxclick", handleAnchorClick, true);
+    return () => {
+      document.removeEventListener("click", handleAnchorClick, true);
+      document.removeEventListener("auxclick", handleAnchorClick, true);
+    };
+  }, [isDemo, demoQuery]);
 
   useEffect(() => {
     syncBrand();
@@ -215,9 +317,9 @@ export function BrandProvider({
       const merged = { ...prev, ...updated };
       if (typeof window !== "undefined" && isDemo) {
         try {
-          const saved = localStorage.getItem(DEMO_STORAGE_KEY);
+          const saved = sessionStorage.getItem(DEMO_STORAGE_KEY);
           const currentOverride = saved ? JSON.parse(saved) : {};
-          localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify({ ...currentOverride, ...updated }));
+          sessionStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify({ ...currentOverride, ...updated }));
         } catch (e) {}
       }
       return merged;
@@ -303,12 +405,14 @@ export function BrandProvider({
     if (typeof window !== "undefined") {
       localStorage.removeItem(DEMO_STORAGE_KEY);
       sessionStorage.removeItem(DEMO_STORAGE_KEY);
+      sessionStorage.removeItem("anomayka_demo_query");
       const cleanUrl = window.location.pathname;
       window.history.replaceState({}, "", cleanUrl);
     }
     setBrand(initialBrand);
     setIsDemo(false);
     setDemoType("");
+    setDemoQuery("");
   };
 
   return (
@@ -318,6 +422,8 @@ export function BrandProvider({
         isDemo,
         demoType,
         demoRibbon: false,
+        demoQuery,
+        getDemoHref,
         resetDemo,
         updateBrand,
       }}

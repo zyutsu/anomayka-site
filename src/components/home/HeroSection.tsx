@@ -10,6 +10,7 @@ import { BrandSettings } from "@/lib/types";
 export function HeroSection({ initialBrand }: { initialBrand: BrandSettings }) {
   const brandContext = useBrand();
   const brand = brandContext?.brand || initialBrand;
+  const getDemoHref = brandContext?.getDemoHref || ((p: string) => p);
 
   return (
     <section className="relative pt-6 pb-12 sm:pt-12 sm:pb-20">
@@ -62,7 +63,7 @@ export function HeroSection({ initialBrand }: { initialBrand: BrandSettings }) {
                   "radial-gradient(ellipse at center, rgba(var(--brand-accent-rgb), 0.35) 0%, rgba(var(--brand-accent-rgb), 0.12) 35%, rgba(var(--brand-accent-rgb), 0) 68%)",
               }}
             />
-            <Link href="/booking" className="relative z-10 w-full sm:w-auto">
+            <Link href={getDemoHref("/booking")} className="relative z-10 w-full sm:w-auto">
               <Button
                 size="lg"
                 className="w-full sm:w-auto h-16 px-10 rounded-2xl text-lg sm:text-xl font-black shadow-xl shadow-brand-accent/25 hover:scale-[1.03] transition-all flex items-center justify-center gap-3 cursor-pointer"
