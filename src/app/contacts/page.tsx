@@ -1,12 +1,13 @@
+"use client";
+
 import React from "react";
 import Link from "next/link";
-import { getDatabase } from "@/lib/db";
 import { MapPin, Phone, Clock, Send, MessageSquare, Calendar, Navigation } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useBrand } from "@/context/BrandContext";
 
 export default function ContactsPage() {
-  const db = getDatabase();
-  const brand = db.brand;
+  const { brand } = useBrand();
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">

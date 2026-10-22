@@ -9,14 +9,15 @@ import { AdminBrandSettings } from "@/components/admin/AdminBrandSettings";
 import { AdminSchedule } from "@/components/admin/AdminSchedule";
 import { AdminPhotos } from "@/components/admin/AdminPhotos";
 import { AdminManualBookingModal } from "@/components/admin/AdminManualBookingModal";
-import { LayoutDashboard, CalendarCheck, Wrench, Palette, Clock, LogOut, Shield, Camera, Lock, PhoneCall } from "lucide-react";
+import { AdminDemoGenerator } from "@/components/admin/AdminDemoGenerator";
+import { LayoutDashboard, CalendarCheck, Wrench, Palette, Clock, LogOut, Shield, Camera, Lock, PhoneCall, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [adminUser, setAdminUser] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<"dashboard" | "bookings" | "services" | "schedule" | "brand" | "photos" | "security">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "bookings" | "services" | "schedule" | "brand" | "photos" | "security" | "demo">("dashboard");
   const [isManualBookingOpen, setIsManualBookingOpen] = useState(false);
 
   // Данные системы
@@ -455,6 +456,18 @@ export default function AdminPage() {
             <span>Безопасность</span>
           </button>
 
+          <button
+            onClick={() => setActiveTab("demo")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              activeTab === "demo"
+                ? "bg-brand-accent text-white shadow-sm"
+                : "text-amber-400 hover:text-amber-300 hover:bg-amber-400/10 font-bold"
+            }`}
+          >
+            <Share2 className="w-3.5 h-3.5 text-amber-400" />
+            <span>🚀 Продажи & Демо</span>
+          </button>
+
           <Button
             size="sm"
             onClick={() => setIsManualBookingOpen(true)}
@@ -639,6 +652,10 @@ export default function AdminPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {activeTab === "demo" && brand && (
+        <AdminDemoGenerator currentBrand={brand} />
       )}
 
       {/* Модальное окно записи клиента по звонку */}

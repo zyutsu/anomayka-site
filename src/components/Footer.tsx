@@ -1,9 +1,14 @@
+"use client";
+
 import React from "react";
 import Link from "next/link";
 import { Phone, MapPin, Clock, Send, MessageSquare, Shield, Smartphone } from "lucide-react";
 import { BrandSettings } from "@/lib/types";
+import { useBrand } from "@/context/BrandContext";
 
-export function Footer({ brand }: { brand: BrandSettings }) {
+export function Footer({ brand: propBrand }: { brand?: BrandSettings }) {
+  const brandContext = useBrand();
+  const brand = brandContext?.brand || propBrand!;
   return (
     <footer className="bg-[#06070a] border-t border-white/10 pt-16 pb-12 text-slate-400 text-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

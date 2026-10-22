@@ -9,8 +9,10 @@ import { StepDateTime } from "@/components/booking/StepDateTime";
 import { StepClientInfo } from "@/components/booking/StepClientInfo";
 import { StepSuccess } from "@/components/booking/StepSuccess";
 import { Check } from "lucide-react";
+import { useBrand } from "@/context/BrandContext";
 
 function BookingContent() {
+  const { brand: contextBrand } = useBrand();
   const searchParams = useSearchParams();
   const initialCatId = searchParams.get("categoryId") || "";
   const initialSrvId = searchParams.get("serviceId") || "";
@@ -47,7 +49,7 @@ function BookingContent() {
 
           setCategories(catsData);
           setServices(srvsData);
-          setBrand(brandData);
+          setBrand(contextBrand || brandData);
 
           // Проверка прямых переходов по query-параметрам
           if (initialSrvId) {

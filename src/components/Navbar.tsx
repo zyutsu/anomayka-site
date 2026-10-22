@@ -6,8 +6,11 @@ import { usePathname } from "next/navigation";
 import { Phone, Calendar, Menu, X, Shield, Clock, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BrandSettings } from "@/lib/types";
+import { useBrand } from "@/context/BrandContext";
 
-export function Navbar({ brand }: { brand: BrandSettings }) {
+export function Navbar({ brand: propBrand }: { brand?: BrandSettings }) {
+  const brandContext = useBrand();
+  const brand = brandContext?.brand || propBrand!;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();

@@ -3,7 +3,7 @@ import "./globals.css";
 import { getDatabase } from "@/lib/db";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { BrandThemeInjector } from "@/components/BrandThemeInjector";
+import { BrandProvider } from "@/context/BrandContext";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -51,10 +51,11 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
       <body className="min-h-screen flex flex-col bg-brand-primary text-slate-100 selection:bg-brand-accent selection:text-white">
-        <BrandThemeInjector initialBrand={brand} />
-        <Navbar brand={brand} />
-        <main className="flex-1">{children}</main>
-        <Footer brand={brand} />
+        <BrandProvider initialBrand={brand}>
+          <Navbar brand={brand} />
+          <main className="flex-1">{children}</main>
+          <Footer brand={brand} />
+        </BrandProvider>
 
         {/* Регистрация Service Worker для PWA */}
         <script
