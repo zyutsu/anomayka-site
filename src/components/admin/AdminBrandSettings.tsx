@@ -282,6 +282,13 @@ export function AdminBrandSettings({ brand, onSaveBrand }: AdminBrandSettingsPro
             required
           />
 
+          <Input
+            label="Прямая ссылка на организацию в Яндекс.Картах"
+            placeholder="https://yandex.ru/maps/org/... (для кнопки перехода к филиалу)"
+            value={form.mapUrl || ""}
+            onChange={(e) => setForm({ ...form, mapUrl: e.target.value })}
+          />
+
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Input
               label="Ссылка на Telegram"

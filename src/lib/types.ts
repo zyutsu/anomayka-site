@@ -7,6 +7,7 @@ export interface BrandSettings {
   phone: string;
   phoneRaw: string;
   address: string;
+  mapUrl?: string; // Прямая ссылка на организацию в Яндекс.Картах (yandex.ru/maps/org/...)
   workHours: string;
   openTime: string; // "09:00"
   closeTime: string; // "21:00"

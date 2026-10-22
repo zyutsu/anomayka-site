@@ -118,21 +118,13 @@ export default function ContactsPage() {
               </p>
               <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
                 <a
-                  href={`https://yandex.ru/maps/?text=${encodeURIComponent(brand.address)}`}
+                  href={brand.mapUrl || `https://yandex.ru/maps/?text=${encodeURIComponent(brand.address)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <Button variant="secondary" size="sm" className="text-xs">
-                    Открыть в Яндекс.Картах
-                  </Button>
-                </a>
-                <a
-                  href={`https://maps.google.com/?q=${encodeURIComponent(brand.address)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Button variant="secondary" size="sm" className="text-xs">
-                    Открыть в Google Maps
+                  <Button variant="secondary" size="sm" className="text-xs font-semibold gap-2">
+                    <Navigation className="w-3.5 h-3.5 text-brand-accent" />
+                    <span>Открыть в Яндекс.Картах</span>
                   </Button>
                 </a>
               </div>

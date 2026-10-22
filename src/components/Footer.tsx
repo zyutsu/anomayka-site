@@ -93,7 +93,15 @@ export function Footer({ brand: propBrand }: { brand?: BrandSettings }) {
             <div className="space-y-2.5 text-xs">
               <div className="flex items-start gap-2.5">
                 <MapPin className="w-4 h-4 text-brand-accent shrink-0 mt-0.5" />
-                <span>{brand.address}</span>
+                <a
+                  href={brand.mapUrl || `https://yandex.ru/maps/?text=${encodeURIComponent(brand.address)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white hover:underline transition-colors"
+                  title="Посмотреть на Яндекс.Картах"
+                >
+                  {brand.address}
+                </a>
               </div>
               <div className="flex items-center gap-2.5">
                 <Phone className="w-4 h-4 text-brand-accent shrink-0" />

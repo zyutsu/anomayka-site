@@ -38,6 +38,7 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
   const [phone, setPhone] = useState("+7 (999) 777-55-33");
   const [city, setCity] = useState("Санкт-Петербург");
   const [address, setAddress] = useState("Московский пр-т, д. 102");
+  const [mapUrl, setMapUrl] = useState("");
   const [accentColor, setAccentColor] = useState("#2563eb");
   const [serviceType, setServiceType] = useState<"autoservice" | "detailing" | "tire" | "complex">("autoservice");
   const [logoUrl, setLogoUrl] = useState("");
@@ -72,6 +73,7 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
     if (phone.trim()) params.set("phone", phone.trim());
     if (city.trim()) params.set("city", city.trim());
     if (address.trim()) params.set("address", address.trim());
+    if (mapUrl.trim()) params.set("map", mapUrl.trim());
     if (accentColor) params.set("color", accentColor.replace("#", ""));
     
     // Если пользователь загрузил свой логотип или ввел ссылку — передаем её в URL
@@ -127,6 +129,7 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
   };
 
   const applyPreset = (preset: "service" | "detailing" | "tire" | "premium") => {
+    setMapUrl("");
     switch (preset) {
       case "detailing":
         setName("Royal Detailing");
@@ -290,6 +293,21 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
                   onChange={(e) => setAddress(e.target.value)}
                   placeholder="ул. Автомобильная, д. 12"
                 />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-theme-muted block mb-1.5 flex items-center justify-between">
+                  <span>Точка в Яндекс.Картах (прямая ссылка)</span>
+                  <span className="text-[10px] text-brand-accent font-medium">Для кнопки «Открыть в Яндекс.Картах»</span>
+                </label>
+                <Input
+                  value={mapUrl}
+                  onChange={(e) => setMapUrl(e.target.value)}
+                  placeholder="https://yandex.ru/maps/org/... (необязательно)"
+                />
+                <span className="text-[10px] text-theme-muted mt-1 block">
+                  Вставьте ссылку на организацию из Яндекс Карт, чтобы клиенты открывали прямо вашу точку с отзывами и маршрутом
+                </span>
               </div>
 
               <div>

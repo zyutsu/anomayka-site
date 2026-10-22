@@ -110,6 +110,7 @@ export function BrandProvider({
         primaryColor: override.primaryColor || prev.primaryColor,
         logoUrl: resolvedLogo,
         slogan: override.slogan || prev.slogan,
+        mapUrl: override.mapUrl || prev.mapUrl,
       };
     });
 
@@ -165,10 +166,11 @@ export function BrandProvider({
       const urlLogo = urlParams.get("logo");
       const urlSlogan = urlParams.get("slogan");
       const urlType = urlParams.get("type");
+      const urlMap = urlParams.get("map") || urlParams.get("mapUrl");
       const isDemoFlag = urlParams.get("demo") === "1" || urlParams.get("demo") === "true";
 
       const hasUrlParams = Boolean(
-        urlName || urlPhone || urlCity || urlAddress || urlColor || urlLogo || urlType || isDemoFlag
+        urlName || urlPhone || urlCity || urlAddress || urlColor || urlLogo || urlType || urlMap || isDemoFlag
       );
 
       // ЕСЛИ пользователь открыл главную страницу или админку по прямой чистой ссылке (без параметров),
@@ -274,6 +276,7 @@ export function BrandProvider({
             : (isSameDemoSession ? savedOverride?.primaryColor : undefined),
           logoUrl: clientLogo,
           slogan: urlSlogan || (isSameDemoSession ? savedOverride?.slogan : undefined) || undefined,
+          mapUrl: urlMap || (isSameDemoSession ? savedOverride?.mapUrl : undefined) || undefined,
           demoType: urlType || (isSameDemoSession ? savedOverride?.demoType : undefined) || "",
         };
 
@@ -284,6 +287,7 @@ export function BrandProvider({
         if (activeOverride.phone) queryParams.set("phone", activeOverride.phone);
         if (activeOverride.city) queryParams.set("city", activeOverride.city);
         if (activeOverride.address) queryParams.set("address", activeOverride.address);
+        if (activeOverride.mapUrl) queryParams.set("map", activeOverride.mapUrl);
         if (activeOverride.accentColor) queryParams.set("color", activeOverride.accentColor.replace("#", ""));
         if (activeOverride.primaryColor) queryParams.set("bg", activeOverride.primaryColor.replace("#", ""));
         if (activeOverride.logoUrl && !activeOverride.logoUrl.startsWith("data:")) {
@@ -386,6 +390,7 @@ export function BrandProvider({
           if (newOverride.phone) params.set("phone", newOverride.phone);
           if (newOverride.city) params.set("city", newOverride.city);
           if (newOverride.address) params.set("address", newOverride.address);
+          if (newOverride.mapUrl) params.set("map", newOverride.mapUrl);
           if (newOverride.accentColor) params.set("color", newOverride.accentColor.replace("#", ""));
           if (newOverride.primaryColor) params.set("bg", newOverride.primaryColor.replace("#", ""));
           if (newOverride.slogan) params.set("slogan", newOverride.slogan);
