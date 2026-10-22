@@ -1,0 +1,399 @@
+{
+  "brand": {
+    "name": "ANOMAYKA",
+    "slogan": "А",
+    "city": "Москва",
+    "phone": "+7 9036666638",
+    "phoneRaw": "79990002424",
+    "address": "г. Москва, Ленинградский пр-т, д. 39, стр. 1",
+    "workHours": "Ежедневно с 09:00 до 21:00",
+    "openTime": "09:00",
+    "closeTime": "21:00",
+    "slotDurationMinutes": 30,
+    "workDays": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      0
+    ],
+    "logoUrl": "/uploads/1792627823063-pq7uc5.png",
+    "primaryColor": "#000000",
+    "accentColor": "#ff0000",
+    "secondaryColor": "#171a24",
+    "telegramUrl": "https://t.me/anomayka_auto",
+    "whatsappUrl": "https://wa.me/79990002424",
+    "vkUrl": "https://vk.com/anomayka",
+    "heroHeadline": "Онлайн-запись в автоцентр без звонков и ожидания",
+    "heroSubheadline": "Выберите услугу, удобное время за 2 минуты — гарантированная бронь без очередей и накладок.",
+    "features": [
+      {
+        "title": "Запись 24/7",
+        "desc": "Никаких гудков и автоответчиков — бронируйте в любое время суток",
+        "icon": "Clock"
+      },
+      {
+        "title": "Без накладок",
+        "desc": "Автоматический учет занятости слотов и длительности каждой процедуры",
+        "icon": "ShieldCheck"
+      },
+      {
+        "title": "Мгновенное подтверждение",
+        "desc": "СМС/Telegram уведомления и напоминание за 2 часа до визита",
+        "icon": "Zap"
+      },
+      {
+        "title": "Гарантия и сервис",
+        "desc": "Сертифицированные мастера, оригинальные расходные материалы",
+        "icon": "Award"
+      }
+    ]
+  },
+  "categories": [
+    {
+      "id": "cat-1",
+      "title": "ТО и технические жидкости",
+      "slug": "maintenance",
+      "description": "Регламентное обслуживание, замена моторного масла, тормозной жидкости и фильтров",
+      "icon": "Wrench",
+      "imageUrl": "/uploads/1792626501416-3wajjm.jpg",
+      "order": 1,
+      "isActive": true
+    },
+    {
+      "id": "cat-2",
+      "title": "Премиум Детейлинг & Мойка",
+      "slug": "detailing",
+      "description": "Детейлинг-мойка в 3 фазы, полировка кузова, керамические составы и химчистка",
+      "icon": "Sparkles",
+      "imageUrl": "/uploads/1792626671699-wf2rd1.png",
+      "order": 2,
+      "isActive": true
+    },
+    {
+      "id": "cat-3",
+      "title": "Компьютерная диагностика",
+      "slug": "diagnostics",
+      "description": "Полное сканирование электронных блоков, подвески, тормозной системы и двигателя",
+      "icon": "Cpu",
+      "imageUrl": "/uploads/1792626676462-uaswmn.jpg",
+      "order": 3,
+      "isActive": true
+    },
+    {
+      "id": "cat-4",
+      "title": "Шиномонтаж и балансировка",
+      "slug": "tires",
+      "description": "Сезонная замена резины, высокоточная балансировка, правка дисков и хранение",
+      "icon": "Disc",
+      "imageUrl": "/uploads/1792626704345-sn26bq.jpg",
+      "order": 4,
+      "isActive": true
+    },
+    {
+      "id": "cat-5",
+      "title": "Кузовной ремонт & Пленка PPF",
+      "slug": "bodywork",
+      "description": "Бронирование зон риска полиуретановой пленкой, беспокрасочное удаление вмятин PDR",
+      "icon": "Shield",
+      "imageUrl": "/uploads/1792626734380-m50nq4.jpg",
+      "order": 5,
+      "isActive": true
+    },
+    {
+      "id": "cat-6",
+      "title": "Тюнинг & Дооснащение",
+      "slug": "tuning",
+      "description": "Чип-тюнинг Stage 1/2, модернизация выхлопной системы, полная шумоизоляция",
+      "icon": "Gauge",
+      "imageUrl": "/uploads/1792626760308-nbftme.jpg",
+      "order": 6,
+      "isActive": true
+    }
+  ],
+  "services": [
+    {
+      "id": "srv-1",
+      "categoryId": "cat-1",
+      "title": "Замена моторного масла и масляного фильтра",
+      "description": "Включает снятие/установку защиты картера, слив отработанного масла, замену фильтра и заливку свежего масла по допускам производителя.",
+      "price": 2500,
+      "durationMinutes": 45,
+      "imageUrl": "https://file.euroauto.ru/v2/file/content-admin/meduza-pages/7372.jpg",
+      "isActive": true,
+      "isPopular": true,
+      "requiresCall": false
+    },
+    {
+      "id": "srv-2",
+      "categoryId": "cat-1",
+      "title": "Комплексное ТО (Масло + 4 фильтра + диагностика подвески)",
+      "description": "Замена масла, масляного, воздушного, салонного и топливного фильтров, плюс 40 пунктов проверки автомобиля.",
+      "price": 6900,
+      "durationMinutes": 90,
+      "imageUrl": "/uploads/1792626828879-q56x2g.jpg",
+      "isActive": true,
+      "isPopular": true
+    },
+    {
+      "id": "srv-3",
+      "categoryId": "cat-1",
+      "title": "Аппаратная замена тормозной жидкости",
+      "description": "Прокачка контуров под давлением с контролем точки кипения на стенде.",
+      "price": 2200,
+      "durationMinutes": 45,
+      "imageUrl": "/uploads/1792627070659-wh8kfq.jpg",
+      "isActive": true
+    },
+    {
+      "id": "srv-4",
+      "categoryId": "cat-2",
+      "title": "Трехфазная премиум-детейлинг мойка ANOMAYKA",
+      "description": "Бесконтактная фаза, ручная мойка нано-шампунем варежкой из шерсти мериноса, очистка дисков от металлического налета и консервация воском.",
+      "price": 3500,
+      "durationMinutes": 60,
+      "imageUrl": "/uploads/1792626991170-wj7atl.png",
+      "isActive": true,
+      "isPopular": true
+    },
+    {
+      "id": "srv-5",
+      "categoryId": "cat-2",
+      "title": "Мягкая восстановительная полировка кузова",
+      "description": "Удаление до 85% паутинки и мелких царапин, восстановление сочного зеркального блеска ЛКП.",
+      "price": 18000,
+      "durationMinutes": 180,
+      "imageUrl": "/uploads/1792626999106-m1d17j.jpg",
+      "isActive": true
+    },
+    {
+      "id": "srv-6",
+      "categoryId": "cat-2",
+      "title": "Глубокая химчистка салона с разбором",
+      "description": "Очистка кожи, текстиля, потолка, багажника торнадором и экстрактором с последующей озонацией салона.",
+      "price": 14500,
+      "durationMinutes": 240,
+      "imageUrl": "/uploads/1792626866630-e0gq2m.jpg",
+      "isActive": true
+    },
+    {
+      "id": "srv-7",
+      "categoryId": "cat-3",
+      "title": "Компьютерная диагностика всех электронных систем",
+      "description": "Чтение, расшифровка параметров в реальном времени (live data), сброс адаптаций и отчет клиенту.",
+      "price": 1900,
+      "durationMinutes": 30,
+      "imageUrl": "/uploads/1792626841639-or3c9q.jpg",
+      "isActive": true,
+      "isPopular": true
+    },
+    {
+      "id": "srv-8",
+      "categoryId": "cat-4",
+      "title": "Комплексный шиномонтаж (4 колеса до R19 включительно)",
+      "description": "Снятие/установка, мойка колес, разбортовка, сборка, герметизация бортов и лазерная балансировка.",
+      "price": 3600,
+      "durationMinutes": 60,
+      "imageUrl": "https://images.unsplash.com/photo-1578844251758-2f71da64c96f?auto=format&fit=crop&w=600&q=80",
+      "isActive": true,
+      "isPopular": true
+    },
+    {
+      "id": "srv-9",
+      "categoryId": "cat-5",
+      "title": "Бронирование «Зоны риска» антигравийной пленкой PPF",
+      "description": "Капот целиком, передний бампер, крылья, оптика, корпуса зеркал и полоса на крышу премиальным полиуретаном 200 микрон.",
+      "price": 65000,
+      "durationMinutes": 300,
+      "imageUrl": "https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?auto=format&fit=crop&w=600&q=80",
+      "isActive": true
+    }
+  ],
+  "bookings": [
+    {
+      "id": "b-init-1",
+      "code": "AN-1001",
+      "serviceId": "srv-1",
+      "serviceTitle": "Замена моторного масла и масляного фильтра",
+      "categoryTitle": "ТО и технические жидкости",
+      "price": 2500,
+      "durationMinutes": 45,
+      "date": "2026-10-21",
+      "time": "11:00",
+      "clientName": "Дмитрий Соколов",
+      "clientPhone": "+7 (916) 123-45-67",
+      "carModel": "BMW 530d G30",
+      "comment": "Масло свое в багажнике",
+      "status": "cancelled",
+      "notes": "Пост №2, мастер Алексей",
+      "createdAt": "2026-10-21T22:06:20.589Z",
+      "updatedAt": "2026-10-21T23:59:38.677Z"
+    },
+    {
+      "id": "book-1792620415851-rsxz",
+      "code": "AN-9446",
+      "serviceId": "srv-1",
+      "serviceTitle": "Замена моторного масла и масляного фильтра",
+      "categoryTitle": "ТО и технические жидкости",
+      "price": 2500,
+      "durationMinutes": 45,
+      "date": "2026-10-25",
+      "time": "11:00",
+      "clientName": "???????? ??????",
+      "clientPhone": "+7 (999) 111-22-33",
+      "carModel": "Porsche 911",
+      "comment": "???? ???????",
+      "status": "cancelled",
+      "createdAt": "2026-10-21T22:06:55.851Z",
+      "updatedAt": "2026-10-22T11:03:07.116Z"
+    },
+    {
+      "id": "book-1792620709227-ys0l",
+      "code": "AN-8451",
+      "serviceId": "srv-1",
+      "serviceTitle": "Замена моторного масла и масляного фильтра",
+      "categoryTitle": "ТО и технические жидкости",
+      "price": 2500,
+      "durationMinutes": 45,
+      "date": "2026-10-21",
+      "time": "09:00",
+      "clientName": "Макар",
+      "clientPhone": "89036666638",
+      "carModel": "BMW 9",
+      "comment": "",
+      "status": "cancelled",
+      "createdAt": "2026-10-21T22:11:49.227Z",
+      "updatedAt": "2026-10-21T22:12:37.950Z"
+    },
+    {
+      "id": "book-1792620797581-nkgr",
+      "code": "AN-7576",
+      "serviceId": "srv-1",
+      "serviceTitle": "Замена моторного масла и масляного фильтра",
+      "categoryTitle": "ТО и технические жидкости",
+      "price": 2500,
+      "durationMinutes": 45,
+      "date": "2026-10-21",
+      "time": "14:00",
+      "clientName": "КОСТИК",
+      "clientPhone": "89036666638",
+      "carModel": "BMW 9",
+      "comment": "ЫЫЫ",
+      "status": "cancelled",
+      "createdAt": "2026-10-21T22:13:17.581Z",
+      "updatedAt": "2026-10-21T22:17:31.868Z"
+    },
+    {
+      "id": "book-1792625168337-9ruo",
+      "code": "AN-5269",
+      "serviceId": "srv-2",
+      "serviceTitle": "Комплексное ТО (Масло + 4 фильтра + диагностика подвески)",
+      "categoryTitle": "ТО и технические жидкости",
+      "price": 6900,
+      "durationMinutes": 90,
+      "date": "2026-10-21",
+      "time": "12:00",
+      "clientName": "Аа",
+      "clientPhone": "89036666638",
+      "carModel": "Bmw",
+      "comment": "",
+      "status": "cancelled",
+      "createdAt": "2026-10-21T23:26:08.337Z",
+      "updatedAt": "2026-10-21T23:59:36.276Z"
+    },
+    {
+      "id": "book-1792626103221-zam2",
+      "code": "AN-7619",
+      "serviceId": "srv-7",
+      "serviceTitle": "Компьютерная диагностика всех электронных систем",
+      "categoryTitle": "Компьютерная диагностика",
+      "price": 1900,
+      "durationMinutes": 30,
+      "date": "2026-10-21",
+      "time": "09:00",
+      "clientName": "T",
+      "clientPhone": "89036666638",
+      "carModel": "",
+      "comment": "",
+      "status": "cancelled",
+      "createdAt": "2026-10-21T23:41:43.221Z",
+      "updatedAt": "2026-10-21T23:43:02.014Z"
+    }
+  ],
+  "blockedSlots": [],
+  "admins": [
+    {
+      "id": "adm-1",
+      "email": "admin@anomayka.ru",
+      "passwordHash": "240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9",
+      "name": "Главный Администратор",
+      "role": "owner"
+    }
+  ],
+  "faqs": [
+    {
+      "id": "faq-1",
+      "question": "Нужно ли дополнительно звонить после записи на сайте?",
+      "answer": "Нет, звонить не требуется! После отправки формы слот мгновенно бронируется за вашим автомобилем в базе данных. Вы получите SMS/уведомление с номером брони.",
+      "order": 1
+    },
+    {
+      "id": "faq-2",
+      "question": "Как перенести или отменить запись?",
+      "answer": "Вы можете сделать это в личном кабинете по номеру телефона либо по персональной ссылке из SMS за пару кликов без звонков оператору.",
+      "order": 2
+    },
+    {
+      "id": "faq-3",
+      "question": "Можно ли приехать со своими расходными материалами?",
+      "answer": "Да, конечно. Мы с радостью примем ваши оригинальные расходники или подберем сертифицированные аналоги с нашего склада по дилерской цене.",
+      "order": 3
+    },
+    {
+      "id": "faq-4",
+      "question": "Где я могу подождать окончания работ?",
+      "answer": "В нашем автоцентре оборудована комфортная клиентская лаунж-зона с панорамным видом на сервисную зону, зерновым кофе, скоростным Wi-Fi и PlayStation 5.",
+      "order": 4
+    }
+  ],
+  "reviews": [
+    {
+      "id": "rev-1792625860997",
+      "author": "Тестовый Клиент",
+      "car": "BMW 5",
+      "service": "ТО",
+      "rating": 5,
+      "text": "Отличный сервис, всё четко по времени!",
+      "date": "22.10.2026"
+    },
+    {
+      "id": "rev-1",
+      "author": "Александр В.",
+      "car": "Porsche Cayenne Coupe",
+      "service": "Оклейка PPF + Детейлинг",
+      "rating": 5,
+      "text": "Записался через сайт ночью за 2 минуты без всяких операторов. Приехал к 10:00 — пост был свободен, мастер сразу принял авто. Качество идеальное!",
+      "date": "18.10.2026"
+    },
+    {
+      "id": "rev-2",
+      "author": "Михаил К.",
+      "car": "BMW M340i",
+      "service": "Комплексное ТО и тормоза",
+      "rating": 5,
+      "text": "Очень удобно сделана онлайн-запись. Видно реальные свободные окна, сразу рассчитана стоимость. Никаких скрытых доплат. Спасибо ANOMAYKA!",
+      "date": "14.10.2026"
+    },
+    {
+      "id": "rev-3",
+      "author": "Елена С.",
+      "car": "Audi Q8",
+      "service": "Детейлинг-мойка 3 фазы",
+      "rating": 5,
+      "text": "Лучший сервис в Москве! Никаких задержек по времени, всё четко по таймингу слота. Салон блестит как с конвейера.",
+      "date": "11.10.2026"
+    }
+  ]
+}
