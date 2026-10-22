@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { getDatabase } from "@/lib/db";
+import { getDatabaseAsync } from "@/lib/db";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { BrandProvider } from "@/context/BrandContext";
@@ -16,7 +16,7 @@ export const viewport: Viewport = {
 };
 
 export async function generateMetadata(): Promise<Metadata> {
-  const db = getDatabase();
+  const db = await getDatabaseAsync();
   const brand = db.brand;
 
   return {
@@ -35,12 +35,12 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const db = getDatabase();
+  const db = await getDatabaseAsync();
   const brand = db.brand;
 
   return (

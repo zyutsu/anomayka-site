@@ -1,12 +1,12 @@
 import React from "react";
-import { getDatabase } from "@/lib/db";
+import { getDatabaseAsync } from "@/lib/db";
 import { ServicesCatalog } from "@/components/services/ServicesCatalog";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export default function ServicesPage() {
-  const db = getDatabase();
+export default async function ServicesPage() {
+  const db = await getDatabaseAsync();
   const categories = db.categories.filter((c) => c.isActive);
   const services = db.services.filter((s) => s.isActive);
 

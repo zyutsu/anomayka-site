@@ -209,6 +209,27 @@
       "durationMinutes": 300,
       "imageUrl": "https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?auto=format&fit=crop&w=600&q=80",
       "isActive": true
+    },
+    {
+      "id": "srv-10",
+      "categoryId": "cat-6",
+      "title": "Чип-тюнинг Stage 1 (Увеличение мощности)",
+      "description": "Программная калибровка блока управления двигателем без снижения ресурса. Прирост мощности и момента до 30%, улучшение отклика педали газа.",
+      "price": 28000,
+      "durationMinutes": 120,
+      "imageUrl": "/uploads/1792626760308-nbftme.jpg",
+      "isActive": true,
+      "isPopular": true
+    },
+    {
+      "id": "srv-11",
+      "categoryId": "cat-6",
+      "title": "Комплексная шумоизоляция салона (Comfort Mat)",
+      "description": "Многослойная премиальная вибро- и шумоизоляция дверей, пола, арок и багажника. Снижение уровня шума в салоне до 60%.",
+      "price": 55000,
+      "durationMinutes": 360,
+      "imageUrl": "/uploads/1792626760308-nbftme.jpg",
+      "isActive": true
     }
   ],
   "bookings": [

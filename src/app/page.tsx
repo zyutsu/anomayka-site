@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import { getDatabase } from "@/lib/db";
+import { getDatabaseAsync } from "@/lib/db";
 import { Calendar, Phone, ArrowRight, Star, ChevronRight, MessageSquare, Wrench, Sparkles, Disc, Cpu, Shield, Gauge } from "lucide-react";
 import { formatPrice, formatDuration } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -10,8 +10,8 @@ import { HeroSection } from "@/components/home/HeroSection";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export default function HomePage() {
-  const db = getDatabase();
+export default async function HomePage() {
+  const db = await getDatabaseAsync();
   const brand = db.brand;
   const categories = db.categories.filter((c) => c.isActive);
   const popularServices = db.services.filter((s) => s.isActive && s.isPopular).slice(0, 4);

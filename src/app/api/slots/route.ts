@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
-import { getAvailableSlots } from '@/lib/db';
+import { getAvailableSlotsAsync } from '@/lib/db';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -12,7 +14,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    const slots = getAvailableSlots(date, duration);
+    const slots = await getAvailableSlotsAsync(date, duration);
     return NextResponse.json({ date, duration, slots });
   } catch (error) {
     console.error('Ошибка расчета свободных слотов:', error);

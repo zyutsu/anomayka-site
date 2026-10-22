@@ -459,8 +459,7 @@ function minutesToTime(m: number): string {
 }
 
 // Генерация всех возможных слотов на день с учетом занятых бронирований
-export function getAvailableSlots(date: string, serviceDurationMinutes: number = 30) {
-  const db = getDatabase();
+export function calculateAvailableSlots(db: DatabaseSchema, date: string, serviceDurationMinutes: number = 30) {
   const { openTime, closeTime, slotDurationMinutes } = db.brand;
 
   const openMinutes = timeToMinutes(openTime);
@@ -529,6 +528,16 @@ export function getAvailableSlots(date: string, serviceDurationMinutes: number =
   }
 
   return slots;
+}
+
+export function getAvailableSlots(date: string, serviceDurationMinutes: number = 30) {
+  const db = getDatabase();
+  return calculateAvailableSlots(db, date, serviceDurationMinutes);
+}
+
+export async function getAvailableSlotsAsync(date: string, serviceDurationMinutes: number = 30) {
+  const db = await getDatabaseAsync();
+  return calculateAvailableSlots(db, date, serviceDurationMinutes);
 }
 
 // Экспорт записей в CSV c UTF-8 BOM для безупречного открытия в Excel
