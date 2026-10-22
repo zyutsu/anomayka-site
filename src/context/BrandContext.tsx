@@ -200,6 +200,23 @@ export function BrandProvider({
         }
       } catch (e) {}
 
+      // Проверяем, совпадает ли открываемая демка с уже сохраненной в этой вкладке
+      const isSameDemoSession = Boolean(
+        savedOverride?.name &&
+        urlName &&
+        savedOverride.name.trim().toLowerCase() === urlName.trim().toLowerCase()
+      );
+
+      // Если открыта ДРУГАЯ демка (новое название компании) — полностью очищаем кэш и песочницу предыдущей демки!
+      if (hasUrlParams && savedOverride && !isSameDemoSession) {
+        sessionStorage.removeItem(DEMO_STORAGE_KEY);
+        sessionStorage.removeItem("anomayka_demo_query");
+        sessionStorage.removeItem("anomayka_demo_categories");
+        sessionStorage.removeItem("anomayka_demo_services");
+        sessionStorage.removeItem("anomayka_demo_bookings");
+        savedOverride = null;
+      }
+
       if (hasUrlParams) {
         // Парсим цвет: приоритет у urlColor, затем у сохраненного оверрайда, затем дефолт
         let resolvedAccent = initialBrand.accentColor;
@@ -212,51 +229,52 @@ export function BrandProvider({
           } else {
             resolvedAccent = `#${urlColor}`;
           }
-        } else if (savedOverride?.accentColor) {
+        } else if (isSameDemoSession && savedOverride?.accentColor) {
           resolvedAccent = savedOverride.accentColor;
         }
 
-        const clientName = urlName || savedOverride?.name || initialBrand.name;
+        const clientName = urlName || (isSameDemoSession ? savedOverride?.name : undefined) || initialBrand.name;
 
         // ВАЖНО: Разрешение логотипа:
-        // 1. Если в сессии сохранен пользовательский загруженный логотип (не дефолтный и не временная монограмма)
-        //    — бережно сохраняем его, не позволяя затирать старыми параметрами ссылки
-        // 2. Иначе, если в URL передан реальный логотип (не монограмма), используем его
-        // 3. Иначе, если в URL или сессии есть монограмма, используем её
-        // 4. Иначе генерируем монограмму под текущее имя и цвет
+        // 1. Если в URL передан реальный логотип (ссылка на изображение) — применяем его безусловно!
+        // 2. Если внутри ТОЙ ЖЕ демки пользователь загружал логотип, а ссылка содержит начальную монограмму — сохраняем загруженный
+        // 3. Если передан urlLogo любого вида (в т.ч. монограмма новой демки) — применяем его
+        // 4. Если внутри той же демки есть сохраненный логотип — используем его
+        // 5. Иначе генерируем свежую монограмму под текущее имя и цвет
         const isMonogram = (url?: string | null) => Boolean(url && url.startsWith("data:image/svg+xml"));
-        const isCustomUploaded = (url?: string | null) =>
+        const isRealImage = (url?: string | null) =>
           Boolean(url && !isMonogram(url) && url !== "/logo.jpg" && url.trim() !== "");
 
         let clientLogo = "";
-        if (isCustomUploaded(savedOverride?.logoUrl)) {
-          // В текущей сессии уже загружен реальный логотип! Сохраняем его приоритет
+        if (isRealImage(urlLogo)) {
+          // В URL явно передан настоящий логотип для этой демки! Применяем его сразу
+          clientLogo = urlLogo!.trim();
+        } else if (isSameDemoSession && isRealImage(savedOverride?.logoUrl) && isMonogram(urlLogo)) {
+          // В текущей сессии уже загружен реальный логотип, а ссылка содержит начальную монограмму
           clientLogo = savedOverride!.logoUrl!;
-        } else if (isCustomUploaded(urlLogo)) {
-          clientLogo = urlLogo!;
         } else if (urlLogo && urlLogo.trim() !== "") {
-          clientLogo = urlLogo;
-        } else if (savedOverride?.logoUrl && savedOverride.logoUrl.trim() !== "") {
+          clientLogo = urlLogo.trim();
+        } else if (isSameDemoSession && savedOverride?.logoUrl && savedOverride.logoUrl.trim() !== "") {
           clientLogo = savedOverride.logoUrl;
         } else {
           clientLogo = generateMonogramLogo(clientName, resolvedAccent);
         }
 
         const activeOverride: Partial<BrandSettings> & { demoType?: string } = {
-          name: urlName || savedOverride?.name || undefined,
-          phone: urlPhone || savedOverride?.phone || undefined,
-          phoneRaw: (urlPhone || savedOverride?.phone)
+          name: urlName || (isSameDemoSession ? savedOverride?.name : undefined) || undefined,
+          phone: urlPhone || (isSameDemoSession ? savedOverride?.phone : undefined) || undefined,
+          phoneRaw: (urlPhone || (isSameDemoSession ? savedOverride?.phone : undefined))
             ? (urlPhone || savedOverride?.phone)!.replace(/\D/g, "")
             : undefined,
-          city: urlCity || savedOverride?.city || undefined,
-          address: urlAddress || savedOverride?.address || undefined,
-          accentColor: urlColor ? resolvedAccent : (savedOverride?.accentColor || undefined),
+          city: urlCity || (isSameDemoSession ? savedOverride?.city : undefined) || undefined,
+          address: urlAddress || (isSameDemoSession ? savedOverride?.address : undefined) || undefined,
+          accentColor: urlColor ? resolvedAccent : (isSameDemoSession ? savedOverride?.accentColor : undefined),
           primaryColor: urlBg
             ? (urlBg.startsWith("#") ? urlBg : `#${urlBg}`)
-            : (savedOverride?.primaryColor || undefined),
+            : (isSameDemoSession ? savedOverride?.primaryColor : undefined),
           logoUrl: clientLogo,
-          slogan: urlSlogan || savedOverride?.slogan || undefined,
-          demoType: urlType || savedOverride?.demoType || "",
+          slogan: urlSlogan || (isSameDemoSession ? savedOverride?.slogan : undefined) || undefined,
+          demoType: urlType || (isSameDemoSession ? savedOverride?.demoType : undefined) || "",
         };
 
         // Формируем чистую query-строку для ссылок с актуальным логотипом и полями

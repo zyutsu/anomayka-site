@@ -40,7 +40,7 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
   const [address, setAddress] = useState("Московский пр-т, д. 102");
   const [accentColor, setAccentColor] = useState("#2563eb");
   const [serviceType, setServiceType] = useState<"autoservice" | "detailing" | "tire" | "complex">("autoservice");
-  const [logoUrl, setLogoUrl] = useState(generateMonogramLogo("Автотехцентр Форвард", "#2563eb"));
+  const [logoUrl, setLogoUrl] = useState("");
   const [slogan, setSlogan] = useState("Профессиональное обслуживание и ремонт автомобилей");
 
   const [copiedLink, setCopiedLink] = useState(false);
@@ -64,7 +64,7 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
 
   // Генерация итогового URL (без плашек)
   const generateUrl = () => {
-    const base = origin || "https://anomayka.ru";
+    const base = origin || (typeof window !== "undefined" ? window.location.origin : "https://vibe-rho-bay.vercel.app");
     const params = new URLSearchParams();
 
     params.set("demo", "1");
@@ -74,9 +74,10 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
     if (address.trim()) params.set("address", address.trim());
     if (accentColor) params.set("color", accentColor.replace("#", ""));
     
-    // Эффективный логотип: загруженный URL или автоматически сгенерированная монограмма
-    const effectiveLogo = logoUrl.trim() || generateMonogramLogo(name.trim() || "Автосервис", accentColor);
-    params.set("logo", effectiveLogo);
+    // Если пользователь загрузил свой логотип или ввел ссылку — передаем её в URL
+    if (logoUrl.trim()) {
+      params.set("logo", logoUrl.trim());
+    }
     
     if (slogan.trim()) params.set("slogan", slogan.trim());
     if (serviceType) params.set("type", serviceType);
@@ -132,28 +133,28 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
         setServiceType("detailing");
         setAccentColor("#10b981");
         setSlogan("Премиальный уход, детейлинг, керамика и полировка кузова");
-        setLogoUrl(generateMonogramLogo("Royal Detailing", "#10b981"));
+        setLogoUrl("");
         break;
       case "tire":
         setName("Пит-Стоп Шиномонтаж");
         setServiceType("tire");
         setAccentColor("#f59e0b");
         setSlogan("Быстрый шиномонтаж без очередей, балансировка и сезонное хранение");
-        setLogoUrl(generateMonogramLogo("Пит-Стоп Шиномонтаж", "#f59e0b"));
+        setLogoUrl("");
         break;
       case "premium":
         setName("Autohaus Motors");
         setServiceType("complex");
         setAccentColor("#8b5cf6");
         setSlogan("Специализированный сервис премиальных автомобилей");
-        setLogoUrl(generateMonogramLogo("Autohaus Motors", "#8b5cf6"));
+        setLogoUrl("");
         break;
       default:
         setName("Автотехцентр Форвард");
         setServiceType("autoservice");
         setAccentColor("#2563eb");
         setSlogan("Регламентное ТО, ремонт подвески, тормозов и агрегатов");
-        setLogoUrl(generateMonogramLogo("Автотехцентр Форвард", "#2563eb"));
+        setLogoUrl("");
         break;
     }
   };
