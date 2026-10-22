@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { BrandSettings } from "@/lib/types";
+import { generateMonogramLogo } from "@/context/BrandContext";
 import {
   Share2,
   Copy,
@@ -39,7 +40,7 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
   const [address, setAddress] = useState("Московский пр-т, д. 102");
   const [accentColor, setAccentColor] = useState("#2563eb");
   const [serviceType, setServiceType] = useState<"autoservice" | "detailing" | "tire" | "complex">("autoservice");
-  const [logoUrl, setLogoUrl] = useState("");
+  const [logoUrl, setLogoUrl] = useState(generateMonogramLogo("Автотехцентр Форвард", "#2563eb"));
   const [slogan, setSlogan] = useState("Профессиональное обслуживание и ремонт автомобилей");
 
   const [copiedLink, setCopiedLink] = useState(false);
@@ -72,7 +73,11 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
     if (city.trim()) params.set("city", city.trim());
     if (address.trim()) params.set("address", address.trim());
     if (accentColor) params.set("color", accentColor.replace("#", ""));
-    if (logoUrl.trim()) params.set("logo", logoUrl.trim());
+    
+    // Эффективный логотип: загруженный URL или автоматически сгенерированная монограмма
+    const effectiveLogo = logoUrl.trim() || generateMonogramLogo(name.trim() || "Автосервис", accentColor);
+    params.set("logo", effectiveLogo);
+    
     if (slogan.trim()) params.set("slogan", slogan.trim());
     if (serviceType) params.set("type", serviceType);
 
@@ -127,24 +132,28 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
         setServiceType("detailing");
         setAccentColor("#10b981");
         setSlogan("Премиальный уход, детейлинг, керамика и полировка кузова");
+        setLogoUrl(generateMonogramLogo("Royal Detailing", "#10b981"));
         break;
       case "tire":
         setName("Пит-Стоп Шиномонтаж");
         setServiceType("tire");
         setAccentColor("#f59e0b");
         setSlogan("Быстрый шиномонтаж без очередей, балансировка и сезонное хранение");
+        setLogoUrl(generateMonogramLogo("Пит-Стоп Шиномонтаж", "#f59e0b"));
         break;
       case "premium":
         setName("Autohaus Motors");
         setServiceType("complex");
         setAccentColor("#8b5cf6");
         setSlogan("Специализированный сервис премиальных автомобилей");
+        setLogoUrl(generateMonogramLogo("Autohaus Motors", "#8b5cf6"));
         break;
       default:
         setName("Автотехцентр Форвард");
         setServiceType("autoservice");
         setAccentColor("#2563eb");
         setSlogan("Регламентное ТО, ремонт подвески, тормозов и агрегатов");
+        setLogoUrl(generateMonogramLogo("Автотехцентр Форвард", "#2563eb"));
         break;
     }
   };
@@ -358,21 +367,32 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
                     />
                   </label>
                 </div>
-                {logoUrl && (
-                  <div className="mt-2 flex items-center gap-3 p-2 rounded-xl bg-black/30 border border-brand-border">
-                    <div className="w-9 h-9 rounded-lg overflow-hidden border border-brand-border shrink-0 bg-black/60">
-                      <img src={logoUrl} alt="Logo" className="w-full h-full object-cover" />
-                    </div>
-                    <span className="text-xs text-theme-muted truncate flex-1">{logoUrl}</span>
+                <div className="mt-2 flex items-center gap-3 p-2.5 rounded-2xl bg-black/40 border border-brand-border">
+                  <div className="w-10 h-10 rounded-xl overflow-hidden border border-brand-border shrink-0 bg-black/60 flex items-center justify-center shadow-md">
+                    <img
+                      src={logoUrl.trim() || generateMonogramLogo(name.trim() || "Автосервис", accentColor)}
+                      alt="Logo Preview"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-xs font-bold text-theme-title block truncate">
+                      {logoUrl.trim() ? "Пользовательский логотип" : `Фирменная эмблема «${name.trim() || "Автосервис"}»`}
+                    </span>
+                    <span className="text-[10px] text-theme-muted block truncate">
+                      {logoUrl.trim() || "Сгенерирована автоматически по названию и цвету"}
+                    </span>
+                  </div>
+                  {logoUrl.trim() && (
                     <button
                       type="button"
                       onClick={() => setLogoUrl("")}
-                      className="text-xs text-rose-400 hover:underline px-2 cursor-pointer"
+                      className="text-xs text-rose-400 hover:text-rose-300 hover:underline px-2 cursor-pointer shrink-0"
                     >
-                      Удалить
+                      Сбросить к эмблеме
                     </button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           </div>

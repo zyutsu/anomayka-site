@@ -57,21 +57,25 @@ export default function RootLayout({
           <Footer brand={brand} />
         </BrandProvider>
 
-        {/* Регистрация Service Worker для PWA */}
+        {/* Очистка устаревшего кэша браузера и снятие Service Worker */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js').then(
-                    function(registration) {
-                      console.log('ANOMAYKA PWA Service Worker registered with scope: ', registration.scope);
-                    },
-                    function(err) {
-                      console.log('ANOMAYKA PWA ServiceWorker registration failed: ', err);
+              if (typeof window !== 'undefined') {
+                if ('serviceWorker' in navigator) {
+                  navigator.serviceWorker.getRegistrations().then(function(regs) {
+                    for (var i = 0; i < regs.length; i++) {
+                      regs[i].unregister();
                     }
-                  );
-                });
+                  });
+                }
+                if ('caches' in window) {
+                  caches.keys().then(function(names) {
+                    for (var i = 0; i < names.length; i++) {
+                      caches.delete(names[i]);
+                    }
+                  });
+                }
               }
             `,
           }}

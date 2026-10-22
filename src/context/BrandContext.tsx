@@ -1,6 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, Suspense } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import { BrandSettings } from "@/lib/types";
 
 export const COLOR_PRESETS: Record<string, string> = {
@@ -17,6 +18,37 @@ export const COLOR_PRESETS: Record<string, string> = {
   rose: "#f43f5e",
 };
 
+// Генератор стильного автомобильного логотипа/монограммы для демо-клиентов
+export function generateMonogramLogo(name: string, accentColor: string = "#2563eb"): string {
+  const cleanName = (name || "А").trim();
+  const words = cleanName.split(/\s+/).filter(Boolean);
+  let displayLetters = "А";
+
+  if (words.length >= 2) {
+    displayLetters = (words[0][0] + words[1][0]).toUpperCase();
+  } else if (cleanName.length > 0) {
+    displayLetters = cleanName.slice(0, 2).toUpperCase();
+  }
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+    <defs>
+      <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#161922"/>
+        <stop offset="100%" stop-color="#08090d"/>
+      </linearGradient>
+      <linearGradient id="borderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="${accentColor}"/>
+        <stop offset="100%" stop-color="${accentColor}" stop-opacity="0.35"/>
+      </linearGradient>
+    </defs>
+    <rect x="6" y="6" width="108" height="108" rx="28" fill="url(#bgGrad)" stroke="url(#borderGrad)" stroke-width="3"/>
+    <rect x="14" y="14" width="92" height="92" rx="20" fill="none" stroke="${accentColor}" stroke-opacity="0.25" stroke-width="1.5"/>
+    <text x="60" y="74" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="${displayLetters.length > 1 ? 38 : 50}" fill="${accentColor}" text-anchor="middle" letter-spacing="-1">${displayLetters}</text>
+  </svg>`;
+
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
 interface BrandContextValue {
   brand: BrandSettings;
   isDemo: boolean;
@@ -29,6 +61,17 @@ interface BrandContextValue {
 const BrandContext = createContext<BrandContextValue | undefined>(undefined);
 
 const DEMO_STORAGE_KEY = "anomayka_demo_brand";
+
+function RouteListener({ onRoute }: { onRoute: () => void }) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    onRoute();
+  }, [pathname, searchParams, onRoute]);
+
+  return null;
+}
 
 export function BrandProvider({
   children,
@@ -43,18 +86,29 @@ export function BrandProvider({
 
   // Функция применения оверрайда к бренду
   const applyBrandOverride = useCallback((override: Partial<BrandSettings> & { demoType?: string }) => {
-    setBrand((prev) => ({
-      ...prev,
-      name: override.name || prev.name,
-      phone: override.phone || prev.phone,
-      phoneRaw: override.phoneRaw || (override.phone ? override.phone.replace(/\D/g, "") : prev.phoneRaw),
-      city: override.city || prev.city,
-      address: override.address || prev.address,
-      accentColor: override.accentColor || prev.accentColor,
-      primaryColor: override.primaryColor || prev.primaryColor,
-      logoUrl: override.logoUrl !== undefined ? override.logoUrl : prev.logoUrl,
-      slogan: override.slogan || prev.slogan,
-    }));
+    setBrand((prev) => {
+      const activeName = override.name || prev.name;
+      const activeAccent = override.accentColor || prev.accentColor;
+
+      // Если в демо-режиме нет логотипа или стоит дефолтный логотип ANOMAYKA — генерируем стильную эмблему под клиента
+      let resolvedLogo = override.logoUrl;
+      if (!resolvedLogo || resolvedLogo === "/logo.jpg" || resolvedLogo === "") {
+        resolvedLogo = generateMonogramLogo(activeName, activeAccent);
+      }
+
+      return {
+        ...prev,
+        name: activeName,
+        phone: override.phone || prev.phone,
+        phoneRaw: override.phoneRaw || (override.phone ? override.phone.replace(/\D/g, "") : prev.phoneRaw),
+        city: override.city || prev.city,
+        address: override.address || prev.address,
+        accentColor: activeAccent,
+        primaryColor: override.primaryColor || prev.primaryColor,
+        logoUrl: resolvedLogo,
+        slogan: override.slogan || prev.slogan,
+      };
+    });
 
     if (override.demoType) {
       setDemoType(override.demoType);
@@ -110,6 +164,10 @@ export function BrandProvider({
           }
         }
 
+        const clientName = urlName || initialBrand.name;
+        // Если логотип не передан в URL — генерируем монограмму для клиента
+        const clientLogo = urlLogo && urlLogo.trim() !== "" ? urlLogo : generateMonogramLogo(clientName, resolvedAccent);
+
         const activeOverride: Partial<BrandSettings> & { demoType?: string } = {
           name: urlName || undefined,
           phone: urlPhone || undefined,
@@ -118,12 +176,12 @@ export function BrandProvider({
           address: urlAddress || undefined,
           accentColor: urlColor ? resolvedAccent : undefined,
           primaryColor: urlBg ? (urlBg.startsWith("#") ? urlBg : `#${urlBg}`) : undefined,
-          logoUrl: urlLogo || undefined,
+          logoUrl: clientLogo,
           slogan: urlSlogan || undefined,
           demoType: urlType || "",
         };
 
-        // Сохраняем в localStorage для надежного сохранения между вкладками и перезагрузками
+        // Сохраняем в localStorage для стабильного сохранения между вкладками и страницами
         localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(activeOverride));
         sessionStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(activeOverride));
         applyBrandOverride(activeOverride);
@@ -149,11 +207,6 @@ export function BrandProvider({
 
   useEffect(() => {
     syncBrand();
-
-    // Слушаем изменение маршрутов и popstate
-    const handlePopState = () => syncBrand();
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
   }, [syncBrand]);
 
   // Метод для обновления бренда из любого компонента (например, после загрузки логотипа)
@@ -269,6 +322,9 @@ export function BrandProvider({
         updateBrand,
       }}
     >
+      <Suspense fallback={null}>
+        <RouteListener onRoute={syncBrand} />
+      </Suspense>
       {children}
     </BrandContext.Provider>
   );
