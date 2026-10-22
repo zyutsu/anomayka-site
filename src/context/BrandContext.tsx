@@ -226,12 +226,11 @@ export function BrandProvider({
         brand,
         isDemo,
         demoType,
-        demoRibbon,
+        demoRibbon: false,
         resetDemo,
       }}
     >
       {children}
-      {isDemo && demoRibbon && <DemoRibbonBar brand={brand} onReset={resetDemo} />}
     </BrandContext.Provider>
   );
 }
@@ -242,58 +241,6 @@ export function useBrand() {
     throw new Error("useBrand must be used within a BrandProvider");
   }
   return context;
-}
-
-// Плавающая аккуратная плашка демонстрационного режима
-function DemoRibbonBar({
-  brand,
-  onReset,
-}: {
-  brand: BrandSettings;
-  onReset: () => void;
-}) {
-  const [isMinimized, setIsMinimized] = useState(false);
-
-  if (isMinimized) {
-    return (
-      <div className="fixed bottom-4 right-4 z-50 animate-fade-in">
-        <button
-          onClick={() => setIsMinimized(false)}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-surface/90 border border-brand-accent/40 text-theme-title text-xs font-semibold shadow-2xl backdrop-blur-md hover:border-brand-accent transition-all"
-        >
-          <span className="w-2 h-2 rounded-full bg-brand-accent animate-pulse" />
-          <span>Демо: {brand.name}</span>
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-auto max-w-[94vw] animate-fade-in pointer-events-auto">
-      <div className="flex items-center gap-2.5 sm:gap-4 px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-full bg-brand-surface/95 border border-brand-accent/50 text-xs shadow-2xl backdrop-blur-xl">
-        <span className="flex h-2 w-2 rounded-full bg-brand-accent animate-pulse shrink-0" />
-        <span className="text-theme-title font-medium truncate">
-          Презентация для: <strong className="text-brand-accent font-bold">{brand.name}</strong>
-        </span>
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={onReset}
-            className="text-[11px] text-theme-muted hover:text-white underline transition-colors cursor-pointer"
-            title="Сбросить демо-режим и вернуть оригинальный бренд"
-          >
-            Сбросить
-          </button>
-          <button
-            onClick={() => setIsMinimized(true)}
-            className="text-theme-muted hover:text-white text-xs px-1.5 py-0.5 rounded-md hover:bg-white/10 transition-colors"
-            title="Свернуть плашку"
-          >
-            ✕
-          </button>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 function adjustBrightness(col: string, percent: number) {

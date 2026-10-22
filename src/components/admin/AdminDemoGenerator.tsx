@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import { BrandSettings } from "@/lib/types";
-import { COLOR_PRESETS } from "@/context/BrandContext";
 import {
   Share2,
   Copy,
@@ -12,7 +11,6 @@ import {
   Phone,
   MapPin,
   Palette,
-  MessageSquare,
   Upload,
   History,
   Trash2,
@@ -43,10 +41,8 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
   const [serviceType, setServiceType] = useState<"autoservice" | "detailing" | "tire" | "complex">("autoservice");
   const [logoUrl, setLogoUrl] = useState("");
   const [slogan, setSlogan] = useState("Профессиональное обслуживание и ремонт автомобилей");
-  const [showRibbon, setShowRibbon] = useState(true);
 
   const [copiedLink, setCopiedLink] = useState(false);
-  const [copiedMessage, setCopiedMessage] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [savedDemos, setSavedDemos] = useState<SavedDemoItem[]>([]);
   const [origin, setOrigin] = useState("");
@@ -65,7 +61,7 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
     }
   }, []);
 
-  // Генерация итогового URL
+  // Генерация итогового URL (без плашек)
   const generateUrl = () => {
     const base = origin || "https://anomayka.ru";
     const params = new URLSearchParams();
@@ -79,35 +75,17 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
     if (logoUrl.trim()) params.set("logo", logoUrl.trim());
     if (slogan.trim()) params.set("slogan", slogan.trim());
     if (serviceType) params.set("type", serviceType);
-    if (!showRibbon) params.set("ribbon", "0");
 
     return `${base}/?${params.toString()}`;
   };
 
   const finalUrl = generateUrl();
 
-  // Готовый скрипт сообщения для клиента
-  const salesMessage = `Здравствуйте! Меня зовут Вячеслав.
-Увидел ваш автосервис «${name || "Автосервис"}».
-
-Чтобы ваши клиенты могли быстро записываться к вам 24/7 без очередей и звонков, я подготовил для вас готовый сервис онлайн-записи:
-👉 ${finalUrl}
-
-Внутри уже настроен расчет времени процедур, адаптивный каталог услуг и удобная панель мастера с календарем заявок.
-Посмотрите, как это выглядит со смартфона!`;
-
   const handleCopyLink = () => {
     navigator.clipboard.writeText(finalUrl);
     setCopiedLink(true);
     saveToHistory();
     setTimeout(() => setCopiedLink(false), 2500);
-  };
-
-  const handleCopyMessage = () => {
-    navigator.clipboard.writeText(salesMessage);
-    setCopiedMessage(true);
-    saveToHistory();
-    setTimeout(() => setCopiedMessage(false), 2500);
   };
 
   const saveToHistory = () => {
@@ -123,7 +101,6 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
     };
 
     setSavedDemos((prev) => {
-      // Исключаем дубликаты по имени
       const filtered = prev.filter((item) => item.name.toLowerCase() !== newItem.name.toLowerCase());
       const updated = [newItem, ...filtered].slice(0, 10);
       try {
@@ -218,8 +195,8 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
             Генератор Демо-ссылок для клиентов
           </h2>
           <p className="text-xs sm:text-sm text-theme-muted max-w-2xl leading-relaxed">
-            Вбейте название сервиса клиента и телефон — система мгновенно создаст персонализированную ссылку. 
-            Клиент открывает сайт и сразу видит готовый продукт со своим логотипом, цветами и контактами!
+            Вбейте название сервиса клиента и телефон — система создаст персональную ссылку. 
+            Клиент открывает сайт и сразу видит чистый готовый продукт под свой автосервис.
           </p>
         </div>
 
@@ -227,21 +204,21 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
         <div className="flex flex-wrap sm:flex-nowrap gap-1.5 shrink-0">
           <button
             onClick={() => applyPreset("service")}
-            className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 text-theme-title border border-brand-border transition-all flex items-center gap-1.5"
+            className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 text-theme-title border border-brand-border transition-all flex items-center gap-1.5 cursor-pointer"
           >
             <Wrench className="w-3.5 h-3.5 text-blue-400" />
             <span>ТО</span>
           </button>
           <button
             onClick={() => applyPreset("detailing")}
-            className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 text-theme-title border border-brand-border transition-all flex items-center gap-1.5"
+            className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 text-theme-title border border-brand-border transition-all flex items-center gap-1.5 cursor-pointer"
           >
             <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
             <span>Детейлинг</span>
           </button>
           <button
             onClick={() => applyPreset("tire")}
-            className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 text-theme-title border border-brand-border transition-all flex items-center gap-1.5"
+            className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 text-theme-title border border-brand-border transition-all flex items-center gap-1.5 cursor-pointer"
           >
             <Disc className="w-3.5 h-3.5 text-amber-400" />
             <span>Шины</span>
@@ -329,7 +306,7 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
                         key={col.hex}
                         type="button"
                         onClick={() => setAccentColor(col.hex)}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2 border transition-all ${
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2 border transition-all cursor-pointer ${
                           isSelected
                             ? "border-white bg-white/10 text-white shadow-md scale-105"
                             : "border-brand-border bg-black/20 text-theme-muted hover:text-white hover:border-white/30"
@@ -390,50 +367,25 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
                     <button
                       type="button"
                       onClick={() => setLogoUrl("")}
-                      className="text-xs text-rose-400 hover:underline px-2"
+                      className="text-xs text-rose-400 hover:underline px-2 cursor-pointer"
                     >
                       Удалить
                     </button>
                   </div>
                 )}
               </div>
-
-              {/* Опция плашки */}
-              <div className="pt-2 flex items-center justify-between border-t border-brand-border/60">
-                <div>
-                  <span className="text-xs font-bold text-theme-title block">
-                    Показывать плашку «Демо-презентация»
-                  </span>
-                  <span className="text-[11px] text-theme-muted">
-                    Если выключить — сайт будет выглядеть как полностью их готовый веб-продукт
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowRibbon(!showRibbon)}
-                  className={`w-11 h-6 rounded-full transition-colors relative ${
-                    showRibbon ? "bg-brand-accent" : "bg-white/20"
-                  }`}
-                >
-                  <span
-                    className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${
-                      showRibbon ? "translate-x-5" : "translate-x-0"
-                    }`}
-                  />
-                </button>
-              </div>
             </div>
           </div>
         </div>
 
-        {/* Результат: Готовая ссылка и Скрипт продаж */}
+        {/* Результат: Готовая ссылка и История */}
         <div className="lg:col-span-5 space-y-6">
           {/* Блок готовой ссылки */}
           <div className="p-6 rounded-3xl bg-brand-surface border border-brand-accent/30 shadow-xl shadow-brand-accent/5 space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-black uppercase text-brand-accent tracking-wider flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4" />
-                <span>Ссылка готова к отправке</span>
+                <span>Ссылка для отправки</span>
               </span>
               <span
                 className="w-2.5 h-2.5 rounded-full"
@@ -443,7 +395,7 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
             </div>
 
             {/* Поле ссылки */}
-            <div className="p-3 rounded-2xl bg-black/40 border border-brand-border font-mono text-xs text-slate-300 break-all select-all">
+            <div className="p-3.5 rounded-2xl bg-black/40 border border-brand-border font-mono text-xs text-slate-300 break-all select-all">
               {finalUrl}
             </div>
 
@@ -483,42 +435,6 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
             </div>
           </div>
 
-          {/* Готовое продающее сообщение */}
-          <div className="p-6 rounded-3xl bg-brand-surface border border-brand-border space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-theme-title flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-brand-accent" />
-                <span>Готовый текст для WhatsApp / Telegram</span>
-              </h3>
-            </div>
-
-            <p className="text-[11px] text-theme-muted leading-relaxed">
-              Отправьте этот текст владельцу автосервиса в WhatsApp, Telegram или директ. Конверсия из такого сообщения максимальная, так как клиент сразу видит свой сервис:
-            </p>
-
-            <div className="p-3 rounded-2xl bg-black/40 border border-brand-border font-sans text-xs text-slate-300 whitespace-pre-wrap leading-relaxed select-all">
-              {salesMessage}
-            </div>
-
-            <Button
-              variant="secondary"
-              onClick={handleCopyMessage}
-              className="w-full flex items-center justify-center gap-2 cursor-pointer"
-            >
-              {copiedMessage ? (
-                <>
-                  <Check className="w-4 h-4 text-emerald-400" />
-                  <span>Текст сообщения скопирован!</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="w-4 h-4" />
-                  <span>Скопировать готовый текст</span>
-                </>
-              )}
-            </Button>
-          </div>
-
           {/* История недавних презентаций */}
           {savedDemos.length > 0 && (
             <div className="p-6 rounded-3xl bg-brand-surface border border-brand-border space-y-3">
@@ -527,7 +443,7 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
                 <span>Недавние ссылки ({savedDemos.length}):</span>
               </div>
 
-              <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+              <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
                 {savedDemos.map((item) => (
                   <div
                     key={item.id}
@@ -550,7 +466,7 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
                           navigator.clipboard.writeText(item.url);
                           alert(`Ссылка для «${item.name}» скопирована!`);
                         }}
-                        className="p-1.5 rounded-lg hover:bg-white/10 text-theme-muted hover:text-white transition-colors"
+                        className="p-1.5 rounded-lg hover:bg-white/10 text-theme-muted hover:text-white transition-colors cursor-pointer"
                         title="Скопировать ссылку"
                       >
                         <Copy className="w-3.5 h-3.5" />
@@ -566,7 +482,7 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
                       </a>
                       <button
                         onClick={() => handleDeleteHistoryItem(item.id)}
-                        className="p-1.5 rounded-lg hover:bg-white/10 text-rose-400 hover:text-rose-300 transition-colors"
+                        className="p-1.5 rounded-lg hover:bg-white/10 text-rose-400 hover:text-rose-300 transition-colors cursor-pointer"
                         title="Удалить из истории"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
