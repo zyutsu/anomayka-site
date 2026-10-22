@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { useBrand } from "@/context/BrandContext";
 
 function AccountContent() {
-  const { isDemo } = useBrand();
+  const { isDemo, getDemoHref } = useBrand();
   const searchParams = useSearchParams();
   const initialPhone = searchParams.get("phone") || "";
 
@@ -288,7 +288,7 @@ function AccountContent() {
                 <p className="text-xs text-slate-400">
                   У вас пока нет активных предстоящих записей.
                 </p>
-                <Link href="/booking">
+                <Link href={getDemoHref("/booking")}>
                   <Button size="sm">Записаться на обслуживание</Button>
                 </Link>
               </div>
@@ -419,7 +419,7 @@ function AccountContent() {
                         )
                       )}
 
-                      <Link href={`/booking?serviceId=${b.serviceId}`}>
+                      <Link href={getDemoHref(`/booking?serviceId=${b.serviceId}`)}>
                         <Button variant="secondary" size="sm" className="h-8 px-3 text-xs rounded-xl">
                           Записаться снова
                         </Button>

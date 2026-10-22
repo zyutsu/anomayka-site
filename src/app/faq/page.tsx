@@ -4,8 +4,10 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { ChevronDown, HelpCircle, Calendar, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useBrand } from "@/context/BrandContext";
 
 export default function FAQPage() {
+  const { getDemoHref } = useBrand();
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   const faqs = [
@@ -89,7 +91,7 @@ export default function FAQPage() {
           Вы можете оформить запись онлайн и указать интересующий вопрос в комментарии мастеру.
         </p>
         <div className="flex justify-center gap-3 pt-2">
-          <Link href="/booking">
+          <Link href={getDemoHref("/booking")}>
             <Button size="md" className="gap-2">
               <Calendar className="w-4 h-4" />
               <span>Записаться онлайн</span>

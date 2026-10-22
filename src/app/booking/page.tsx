@@ -41,8 +41,22 @@ function BookingContent() {
         ]);
 
         if (catsRes.ok && srvsRes.ok) {
-          const catsData: Category[] = await catsRes.json();
-          const srvsData: Service[] = await srvsRes.json();
+          let catsData: Category[] = await catsRes.json();
+          let srvsData: Service[] = await srvsRes.json();
+
+          // В демо-режиме подгружаем изолированные категории и услуги текущей вкладки
+          if (isDemo && typeof window !== "undefined") {
+            try {
+              const demoCats = sessionStorage.getItem("anomayka_demo_categories");
+              if (demoCats) catsData = JSON.parse(demoCats);
+
+              const demoSrvs = sessionStorage.getItem("anomayka_demo_services");
+              if (demoSrvs) srvsData = JSON.parse(demoSrvs);
+            } catch (e) {}
+          }
+
+          catsData = catsData.filter((c) => c.isActive);
+          srvsData = srvsData.filter((s) => s.isActive);
 
           setCategories(catsData);
           setServices(srvsData);

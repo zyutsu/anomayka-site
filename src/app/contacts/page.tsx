@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useBrand } from "@/context/BrandContext";
 
 export default function ContactsPage() {
-  const { brand } = useBrand();
+  const { brand, getDemoHref } = useBrand();
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">
@@ -140,7 +140,7 @@ export default function ContactsPage() {
           </div>
 
           <div className="relative z-10 pt-4 flex justify-end">
-            <Link href="/booking">
+            <Link href={getDemoHref("/booking")}>
               <Button size="md" className="gap-2">
                 <Calendar className="w-4 h-4" />
                 <span>Записаться в этот филиал</span>

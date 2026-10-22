@@ -11,13 +11,40 @@ import { CallMasterModal } from "@/components/CallMasterModal";
 import { useBrand } from "@/context/BrandContext";
 
 export function ServicesCatalog({
-  categories,
-  services,
+  categories: initialCategories,
+  services: initialServices,
 }: {
   categories: Category[];
   services: Service[];
 }) {
-  const { brand, demoType, getDemoHref } = useBrand();
+  const { brand, demoType, getDemoHref, isDemo } = useBrand();
+
+  const [categories, setCategories] = React.useState<Category[]>(initialCategories);
+  const [services, setServices] = React.useState<Service[]>(initialServices);
+
+  // В демо-режиме подгружаем изолированные категории и услуги текущей вкладки
+  React.useEffect(() => {
+    if (isDemo && typeof window !== "undefined") {
+      try {
+        const demoCats = sessionStorage.getItem("anomayka_demo_categories");
+        if (demoCats) {
+          setCategories(JSON.parse(demoCats).filter((c: Category) => c.isActive));
+        } else {
+          setCategories(initialCategories);
+        }
+
+        const demoSrvs = sessionStorage.getItem("anomayka_demo_services");
+        if (demoSrvs) {
+          setServices(JSON.parse(demoSrvs).filter((s: Service) => s.isActive));
+        } else {
+          setServices(initialServices);
+        }
+        return;
+      } catch (e) {}
+    }
+    setCategories(initialCategories);
+    setServices(initialServices);
+  }, [isDemo, initialCategories, initialServices]);
 
   // Фильтрация/сортировка по demoType, если задан
   const filteredCategories = React.useMemo(() => {

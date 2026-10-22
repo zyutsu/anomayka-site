@@ -6,6 +6,7 @@ import { Booking, BrandSettings } from "@/lib/types";
 import { CheckCircle2, Calendar, Clock, MapPin, Download, ArrowRight, UserCheck, MessageSquare } from "lucide-react";
 import { formatPrice, formatDuration, formatDateRu } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useBrand } from "@/context/BrandContext";
 
 interface StepSuccessProps {
   booking: Booking;
@@ -14,6 +15,8 @@ interface StepSuccessProps {
 }
 
 export function StepSuccess({ booking, brand, onReset }: StepSuccessProps) {
+  const brandCtx = useBrand();
+  const getDemoHref = brandCtx?.getDemoHref || ((p: string) => p);
   // Генерация iCalendar файла (.ics) для добавления события в Apple/Google Calendar
   const downloadICS = () => {
     const startDateStr = `${booking.date.replace(/-/g, "")}T${booking.time.replace(":", "")}00`;
@@ -141,7 +144,7 @@ export function StepSuccess({ booking, brand, onReset }: StepSuccessProps) {
         </Button>
 
         <Link
-          href={`/account?phone=${encodeURIComponent(booking.clientPhone)}`}
+          href={getDemoHref(`/account?phone=${encodeURIComponent(booking.clientPhone)}`)}
           className="flex-1"
         >
           <Button variant="outline" className="w-full justify-center gap-2 text-xs">

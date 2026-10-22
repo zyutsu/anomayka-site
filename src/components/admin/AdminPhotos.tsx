@@ -26,6 +26,11 @@ export function AdminPhotos({
   const [isUploading, setIsUploading] = useState(false);
   const [savedMessage, setSavedMessage] = useState("");
 
+  // Синхронизация состояния логотипа при смене бренда извне
+  React.useEffect(() => {
+    setLogoUrl(brand.logoUrl || "");
+  }, [brand.logoUrl]);
+
   // Универсальный загрузчик файлов с удалением старого
   const handleFileUpload = async (file: File, oldUrl?: string): Promise<string | null> => {
     setIsUploading(true);

@@ -191,8 +191,17 @@ export function BrandProvider({
         return;
       }
 
+      // Проверяем сохраненные переопределения из текущей сессии вкладки
+      let savedOverride: (Partial<BrandSettings> & { demoType?: string }) | null = null;
+      try {
+        const savedStr = sessionStorage.getItem(DEMO_STORAGE_KEY);
+        if (savedStr) {
+          savedOverride = JSON.parse(savedStr);
+        }
+      } catch (e) {}
+
       if (hasUrlParams) {
-        // Парсим цвет
+        // Парсим цвет: приоритет у urlColor, затем у сохраненного оверрайда, затем дефолт
         let resolvedAccent = initialBrand.accentColor;
         if (urlColor) {
           const lower = urlColor.toLowerCase();
@@ -203,37 +212,67 @@ export function BrandProvider({
           } else {
             resolvedAccent = `#${urlColor}`;
           }
+        } else if (savedOverride?.accentColor) {
+          resolvedAccent = savedOverride.accentColor;
         }
 
-        const clientName = urlName || initialBrand.name;
-        // Если логотип не передан в URL — генерируем монограмму для клиента
-        const clientLogo = urlLogo && urlLogo.trim() !== "" ? urlLogo : generateMonogramLogo(clientName, resolvedAccent);
+        const clientName = urlName || savedOverride?.name || initialBrand.name;
+
+        // ВАЖНО: Разрешение логотипа:
+        // 1. Если в сессии сохранен пользовательский загруженный логотип (не дефолтный и не временная монограмма)
+        //    — бережно сохраняем его, не позволяя затирать старыми параметрами ссылки
+        // 2. Иначе, если в URL передан реальный логотип (не монограмма), используем его
+        // 3. Иначе, если в URL или сессии есть монограмма, используем её
+        // 4. Иначе генерируем монограмму под текущее имя и цвет
+        const isMonogram = (url?: string | null) => Boolean(url && url.startsWith("data:image/svg+xml"));
+        const isCustomUploaded = (url?: string | null) =>
+          Boolean(url && !isMonogram(url) && url !== "/logo.jpg" && url.trim() !== "");
+
+        let clientLogo = "";
+        if (isCustomUploaded(savedOverride?.logoUrl)) {
+          // В текущей сессии уже загружен реальный логотип! Сохраняем его приоритет
+          clientLogo = savedOverride!.logoUrl!;
+        } else if (isCustomUploaded(urlLogo)) {
+          clientLogo = urlLogo!;
+        } else if (urlLogo && urlLogo.trim() !== "") {
+          clientLogo = urlLogo;
+        } else if (savedOverride?.logoUrl && savedOverride.logoUrl.trim() !== "") {
+          clientLogo = savedOverride.logoUrl;
+        } else {
+          clientLogo = generateMonogramLogo(clientName, resolvedAccent);
+        }
 
         const activeOverride: Partial<BrandSettings> & { demoType?: string } = {
-          name: urlName || undefined,
-          phone: urlPhone || undefined,
-          phoneRaw: urlPhone ? urlPhone.replace(/\D/g, "") : undefined,
-          city: urlCity || undefined,
-          address: urlAddress || undefined,
-          accentColor: urlColor ? resolvedAccent : undefined,
-          primaryColor: urlBg ? (urlBg.startsWith("#") ? urlBg : `#${urlBg}`) : undefined,
+          name: urlName || savedOverride?.name || undefined,
+          phone: urlPhone || savedOverride?.phone || undefined,
+          phoneRaw: (urlPhone || savedOverride?.phone)
+            ? (urlPhone || savedOverride?.phone)!.replace(/\D/g, "")
+            : undefined,
+          city: urlCity || savedOverride?.city || undefined,
+          address: urlAddress || savedOverride?.address || undefined,
+          accentColor: urlColor ? resolvedAccent : (savedOverride?.accentColor || undefined),
+          primaryColor: urlBg
+            ? (urlBg.startsWith("#") ? urlBg : `#${urlBg}`)
+            : (savedOverride?.primaryColor || undefined),
           logoUrl: clientLogo,
-          slogan: urlSlogan || undefined,
-          demoType: urlType || "",
+          slogan: urlSlogan || savedOverride?.slogan || undefined,
+          demoType: urlType || savedOverride?.demoType || "",
         };
 
-        // Формируем чистую query-строку для ссылок
+        // Формируем чистую query-строку для ссылок с актуальным логотипом и полями
         const queryParams = new URLSearchParams();
         queryParams.set("demo", "1");
-        if (urlName) queryParams.set("name", urlName);
-        if (urlPhone) queryParams.set("phone", urlPhone);
-        if (urlCity) queryParams.set("city", urlCity);
-        if (urlAddress) queryParams.set("address", urlAddress);
-        if (urlColor) queryParams.set("color", urlColor);
-        if (urlBg) queryParams.set("bg", urlBg);
-        if (urlLogo) queryParams.set("logo", urlLogo);
-        if (urlSlogan) queryParams.set("slogan", urlSlogan);
-        if (urlType) queryParams.set("type", urlType);
+        if (activeOverride.name) queryParams.set("name", activeOverride.name);
+        if (activeOverride.phone) queryParams.set("phone", activeOverride.phone);
+        if (activeOverride.city) queryParams.set("city", activeOverride.city);
+        if (activeOverride.address) queryParams.set("address", activeOverride.address);
+        if (activeOverride.accentColor) queryParams.set("color", activeOverride.accentColor.replace("#", ""));
+        if (activeOverride.primaryColor) queryParams.set("bg", activeOverride.primaryColor.replace("#", ""));
+        if (activeOverride.logoUrl && !activeOverride.logoUrl.startsWith("data:")) {
+          queryParams.set("logo", activeOverride.logoUrl);
+        }
+        if (activeOverride.slogan) queryParams.set("slogan", activeOverride.slogan);
+        if (activeOverride.demoType) queryParams.set("type", activeOverride.demoType);
         const qStr = queryParams.toString();
 
         setDemoQuery(qStr);
@@ -319,8 +358,36 @@ export function BrandProvider({
         try {
           const saved = sessionStorage.getItem(DEMO_STORAGE_KEY);
           const currentOverride = saved ? JSON.parse(saved) : {};
-          sessionStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify({ ...currentOverride, ...updated }));
-        } catch (e) {}
+          const newOverride = { ...currentOverride, ...updated };
+          sessionStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(newOverride));
+
+          // Пересобираем demoQuery с обновленными полями (логотип, название, телефон, город, цвет и т.д.)
+          const params = new URLSearchParams(demoQuery || window.location.search);
+          params.set("demo", "1");
+          if (newOverride.name) params.set("name", newOverride.name);
+          if (newOverride.phone) params.set("phone", newOverride.phone);
+          if (newOverride.city) params.set("city", newOverride.city);
+          if (newOverride.address) params.set("address", newOverride.address);
+          if (newOverride.accentColor) params.set("color", newOverride.accentColor.replace("#", ""));
+          if (newOverride.primaryColor) params.set("bg", newOverride.primaryColor.replace("#", ""));
+          if (newOverride.slogan) params.set("slogan", newOverride.slogan);
+          if (newOverride.demoType) params.set("type", newOverride.demoType);
+
+          // Логотип сохраняем в query, если это валидный URL (не гигантский base64)
+          if (newOverride.logoUrl && !newOverride.logoUrl.startsWith("data:")) {
+            params.set("logo", newOverride.logoUrl);
+          }
+
+          const newQuery = params.toString();
+          setDemoQuery(newQuery);
+          sessionStorage.setItem("anomayka_demo_query", newQuery);
+
+          // Мягко обновляем URL в адресной строке без перезагрузки страницы
+          const newUrl = `${window.location.pathname}?${newQuery}`;
+          window.history.replaceState({}, "", newUrl);
+        } catch (e) {
+          console.error("Failed to update demo brand in session", e);
+        }
       }
       return merged;
     });
