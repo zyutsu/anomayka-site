@@ -434,7 +434,7 @@ export default function AdminPage() {
           <div className="p-3 rounded-xl bg-brand-secondary border border-brand-border text-center text-xs text-theme-muted space-y-1">
             <span className="block font-semibold text-theme-title">Данные для входа по умолчанию:</span>
             <span>Логин: <code className="font-mono text-brand-accent">admin@anomayka.ru</code></span>
-            <span className="block">Пароль: <code className="font-mono text-brand-accent">admin123</code></span>
+            <span className="block">Пароль: <code className="font-mono text-brand-accent">AutoPro#2026</code></span>
           </div>
         </div>
       </div>

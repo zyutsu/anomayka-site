@@ -316,7 +316,7 @@ export function getDatabase(): DatabaseSchema {
           {
             id: 'adm-1',
             email: 'admin@anomayka.ru',
-            passwordHash: 'admin123', // Демо-пароль для MVP
+            passwordHash: '3a3277ca357d39ba330f04f17a588716013283272bd5412b430c0cd57c3ace9c', // Хеш безопасного пароля AutoPro#2026
             name: 'Главный Администратор',
             role: 'owner'
           }
@@ -346,7 +346,7 @@ export function getDatabase(): DatabaseSchema {
         {
           id: 'adm-1',
           email: 'admin@anomayka.ru',
-          passwordHash: 'admin123',
+          passwordHash: '3a3277ca357d39ba330f04f17a588716013283272bd5412b430c0cd57c3ace9c',
           name: 'Главный Администратор',
           role: 'owner'
         }
