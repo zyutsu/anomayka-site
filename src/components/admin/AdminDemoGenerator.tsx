@@ -876,26 +876,41 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
                 )}
               </Button>
 
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <a
-                  href={`https://wa.me/?text=${encodeURIComponent(getPitchText(pitchStyle))}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 flex items-center justify-center gap-1.5 font-semibold transition-colors"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>В WhatsApp</span>
-                </a>
-                <a
-                  href={`https://t.me/share/url?url=${encodeURIComponent(currentActiveUrl)}&text=${encodeURIComponent(getPitchText(pitchStyle).replace(currentActiveUrl, ""))}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-3 py-2 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/20 flex items-center justify-center gap-1.5 font-semibold transition-colors"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>В Telegram</span>
-                </a>
-              </div>
+              {/* Быстрая отправка в мессенджеры */}
+              {(() => {
+                const rawClean = phone.replace(/\D/g, "");
+                const normPhone = rawClean.startsWith("8") && rawClean.length === 11 ? "7" + rawClean.slice(1) : rawClean;
+                const pitch = getPitchText(pitchStyle);
+                const waUrl = normPhone 
+                  ? `https://api.whatsapp.com/send?phone=${normPhone}&text=${encodeURIComponent(pitch)}`
+                  : `https://api.whatsapp.com/send?text=${encodeURIComponent(pitch)}`;
+                const tgUrl = normPhone
+                  ? `tg://resolve?phone=${normPhone}`
+                  : `https://t.me/share/url?url=${encodeURIComponent(currentActiveUrl)}&text=${encodeURIComponent(pitch.replace(currentActiveUrl, ""))}`;
+
+                return (
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <a
+                      href={waUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 flex items-center justify-center gap-1.5 font-semibold transition-colors"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      <span>В WhatsApp {normPhone ? `(+${normPhone})` : ""}</span>
+                    </a>
+                    <a
+                      href={tgUrl}
+                      target={normPhone ? undefined : "_blank"}
+                      rel={normPhone ? undefined : "noopener noreferrer"}
+                      className="px-3 py-2 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/20 flex items-center justify-center gap-1.5 font-semibold transition-colors"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      <span>В Telegram {normPhone ? `(+${normPhone})` : ""}</span>
+                    </a>
+                  </div>
+                );
+              })()}
             </div>
           </div>
 
