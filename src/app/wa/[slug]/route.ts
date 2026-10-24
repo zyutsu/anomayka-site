@@ -44,14 +44,21 @@ export async function GET(
       cleanPhone = '7' + cleanPhone.slice(1);
     }
 
+    const reqUrl = new URL(req.url);
+    const isApp = reqUrl.searchParams.get('app') === '1';
+
     const shortUrl = `https://vibe-rho-bay.vercel.app/d/${cleanSlug}`;
     const targetName = name.toLowerCase() !== 'автосервис' && name.toLowerCase() !== 'сто' ? `«${name}»` : (city ? `в г. ${city}` : '');
-    const pitchText = `Здравствуйте! Увидел ваш автосервис ${targetName}. Собрал для вас готовый сайт с онлайн-записью и каталогом услуг:\n\n👉 ${shortUrl}\n\nПосмотрите с телефона, как вам? Мы можем внести любые правки под вас (ваши точные цены, услуги, фото и дизайн).`;
+    
+    // Полный подробный текст со всеми правками и примечанием про VPN
+    const pitchText = `Здравствуйте!\n\nОбратил внимание на ваш автосервис ${targetName}. Решил не писать длинных предложений, а сразу показать на деле — собрал для вас готовый рабочий сайт с онлайн-записью клиентов, каталогом услуг и точкой на Яндекс.Картах:\n\n👉 ${shortUrl}\n\nСайт полностью адаптирован под смартфоны: клиенты могут в пару кликов выбрать услугу, узнать стоимость и записаться на конкретное время без лишних звонков мастеру.\n\nЕстественно, это демонстрационный образец — мы можем внести абсолютно любые правки под вас: скорректировать цены и список услуг, поменять дизайн, цвета, поставить ваш реальный логотип и добавить фото боксов.\n\nВзгляните с телефона пару минут. Если идея понравится — всё доработаем и запустим буквально за 1 день. Как вам такой концепт?\n\n(P.S. Если ссылка сразу не откроется — включите, пожалуйста, VPN, тестовый сервер пока зарубежный 🤝)`;
 
-    const waWebUrl = `https://web.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(pitchText)}`;
+    const targetUrl = isApp
+      ? `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(pitchText)}`
+      : `https://web.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(pitchText)}`;
 
-    // Моментальный редирект в WhatsApp Web
-    return NextResponse.redirect(waWebUrl, 307);
+    // Моментальный редирект в WhatsApp с полным сообщением
+    return NextResponse.redirect(targetUrl, 307);
   } catch (err) {
     return NextResponse.redirect(new URL('/', req.url), 307);
   }
