@@ -366,6 +366,8 @@ export async function getDatabaseAsync(): Promise<DatabaseSchema> {
   try {
     const res = await fetch(`${VERCEL_BLOB_DB_URL}?t=${Date.now()}`, {
       cache: 'no-store',
+      next: { revalidate: 0 },
+      headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' },
     });
     if (res.ok) {
       const cloudDb: DatabaseSchema = await res.json();

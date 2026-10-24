@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getDatabaseAsync } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export async function GET(
   req: Request,
@@ -13,7 +14,25 @@ export async function GET(
     const cleanSlug = decodeURIComponent(rawSlug).toLowerCase().trim();
 
     const db = await getDatabaseAsync();
-    const found = db.shortLinks?.find((l) => l.slug.toLowerCase() === cleanSlug);
+    let found = db.shortLinks?.find((l) => l.slug.toLowerCase() === cleanSlug);
+
+    // Если в локальной копии не найдено — опрашиваем напрямую Vercel Blob без кэширования
+    if (!found) {
+      try {
+        const rawRes = await fetch(
+          `https://sputkeclegvjikpr.public.blob.vercel-storage.com/database.json?t=${Date.now()}`,
+          {
+            cache: 'no-store',
+            next: { revalidate: 0 },
+            headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' },
+          }
+        );
+        if (rawRes.ok) {
+          const fresh = await rawRes.json();
+          found = fresh.shortLinks?.find((l: any) => l.slug.toLowerCase() === cleanSlug);
+        }
+      } catch (e) {}
+    }
 
     if (found && found.url) {
       const targetUrl = found.url.startsWith('http')
