@@ -362,27 +362,25 @@ export function getDatabase(): DatabaseSchema {
 
 // Асинхронное получение базы данных с централизованным хранилищем Vercel Blob
 export async function getDatabaseAsync(): Promise<DatabaseSchema> {
-  // 1. Если подключен Vercel Blob — всегда берем самую свежую версию из облака
-  if (process.env.BLOB_STORE_ID || process.env.BLOB_READ_WRITE_TOKEN || process.env.VERCEL_OIDC_TOKEN) {
-    try {
-      const res = await fetch(`${VERCEL_BLOB_DB_URL}?t=${Date.now()}`, {
-        cache: 'no-store',
-      });
-      if (res.ok) {
-        const cloudDb: DatabaseSchema = await res.json();
-        if (cloudDb && cloudDb.brand && Array.isArray(cloudDb.categories)) {
-          memoryDb = cloudDb;
-          // Дублируем в /tmp для мгновенного доступа
-          try {
-            ensureDirectoryExists(TMP_DB_FILE);
-            fs.writeFileSync(TMP_DB_FILE, JSON.stringify(cloudDb, null, 2), 'utf-8');
-          } catch (e) {}
-          return cloudDb;
-        }
+  // 1. Всегда пытаемся забрать самую свежую версию из Vercel Blob
+  try {
+    const res = await fetch(`${VERCEL_BLOB_DB_URL}?t=${Date.now()}`, {
+      cache: 'no-store',
+    });
+    if (res.ok) {
+      const cloudDb: DatabaseSchema = await res.json();
+      if (cloudDb && cloudDb.brand && Array.isArray(cloudDb.categories)) {
+        memoryDb = cloudDb;
+        // Дублируем в /tmp для мгновенного доступа
+        try {
+          ensureDirectoryExists(TMP_DB_FILE);
+          fs.writeFileSync(TMP_DB_FILE, JSON.stringify(cloudDb, null, 2), 'utf-8');
+        } catch (e) {}
+        return cloudDb;
       }
-    } catch (blobErr) {
-      // Игнорируем сетевые ошибки и используем локальный fallback
     }
+  } catch (blobErr) {
+    // Игнорируем сетевые ошибки и используем локальный fallback
   }
 
   // 2. Fallback на локальный синхронный getDatabase
