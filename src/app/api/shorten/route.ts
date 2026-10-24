@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDatabaseAsync, saveDatabaseAsync } from '@/lib/db';
+import { getDatabase, saveDatabase, saveDatabaseAsync } from '@/lib/db';
 import { ShortDemoLink } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -19,7 +19,7 @@ export async function POST(req: Request) {
       .replace(/-+/g, '-')
       .replace(/^-|-$/g, '') || `demo-${Math.random().toString(36).substring(2, 8)}`;
 
-    const db = await getDatabaseAsync();
+    const db = getDatabase();
     if (!db.shortLinks) {
       db.shortLinks = [];
     }
@@ -36,12 +36,16 @@ export async function POST(req: Request) {
       db.shortLinks[existingIndex] = linkItem;
     } else {
       db.shortLinks.unshift(linkItem);
-      if (db.shortLinks.length > 100) {
-        db.shortLinks = db.shortLinks.slice(0, 100);
+      if (db.shortLinks.length > 150) {
+        db.shortLinks = db.shortLinks.slice(0, 150);
       }
     }
 
-    await saveDatabaseAsync(db);
+    // Мгновенное сохранение в локальную память и /tmp
+    saveDatabase(db);
+
+    // Асинхронная выгрузка в облачный Blob без задержки ответа клиенту
+    saveDatabaseAsync(db).catch((err) => console.error('Background blob save error:', err));
 
     return NextResponse.json({
       success: true,

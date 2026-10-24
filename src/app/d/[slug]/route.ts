@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDatabaseAsync } from '@/lib/db';
+import { getDatabase, getDatabaseAsync } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -13,35 +13,19 @@ export async function GET(
     const rawSlug = resolvedParams?.slug || '';
     const cleanSlug = decodeURIComponent(rawSlug).toLowerCase().trim();
 
-    const db = await getDatabaseAsync();
-    let found = db.shortLinks?.find((l) => l.slug.toLowerCase() === cleanSlug);
+    const reqUrl = new URL(req.url);
+    const searchParams = reqUrl.searchParams;
 
-    // Если в локальной копии не найдено — опрашиваем напрямую Vercel Blob без кэширования
-    if (!found) {
-      try {
-        const rawRes = await fetch(
-          `https://sputkeclegvjikpr.public.blob.vercel-storage.com/database.json?t=${Date.now()}`,
-          {
-            cache: 'no-store',
-            next: { revalidate: 0 },
-            headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' },
-          }
-        );
-        if (rawRes.ok) {
-          const fresh = await rawRes.json();
-          found = fresh.shortLinks?.find((l: any) => l.slug.toLowerCase() === cleanSlug);
-        }
-      } catch (e) {}
+    // 1. Если в самом запросе к /d/[slug] уже переданы query-параметры (например /d/slug?name=...)
+    // Мгновенно отдаем редирект без ожидания баз данных
+    if (searchParams.has('name') || searchParams.has('demo') || searchParams.has('d') || searchParams.has('n')) {
+      const targetParams = new URLSearchParams(searchParams);
+      targetParams.set('demo', '1');
+      return NextResponse.redirect(new URL(`/?${targetParams.toString()}`, req.url), 307);
     }
 
-    if (found && found.url) {
-      const targetUrl = found.url.startsWith('http')
-        ? found.url
-        : new URL(found.url, req.url).toString();
-      return NextResponse.redirect(targetUrl, 307);
-    }
-
-    // Если slug — это base64url закодированный JSON полезной нагрузки (stateless сжатая ссылка)
+    // 2. Проверяем, является ли slug base64url закодированным JSON (stateless компактная ссылка)
+    // Работает МГНОВЕННО (0 мс) без единого запроса к сети
     try {
       let b64 = cleanSlug.replace(/-/g, '+').replace(/_/g, '/');
       while (b64.length % 4) b64 += '=';
@@ -66,10 +50,41 @@ export async function GET(
       }
     } catch (e) {}
 
-    // Если ссылка не найдена — перенаправляем на главную
-    return NextResponse.redirect(new URL('/', req.url), 307);
+    // 3. Мгновенная проверка локального кэша базы данных (0 мс)
+    const localDb = getDatabase();
+    let found = localDb.shortLinks?.find((l) => l.slug.toLowerCase() === cleanSlug);
+
+    // 4. Если в локальной памяти нет — быстрый поиск с жестким таймаутом 1.2 сек
+    if (!found) {
+      try {
+        const asyncDb = await Promise.race([
+          getDatabaseAsync(),
+          new Promise<any>((_, reject) => setTimeout(() => reject(new Error('timeout')), 1200)),
+        ]);
+        found = asyncDb?.shortLinks?.find((l: any) => l.slug.toLowerCase() === cleanSlug);
+      } catch (e) {}
+    }
+
+    if (found && found.url) {
+      const targetUrl = found.url.startsWith('http')
+        ? found.url
+        : new URL(found.url, req.url).toString();
+      return NextResponse.redirect(targetUrl, 307);
+    }
+
+    // 5. Умный fallback: если ссылки нет в базе — восстанавливаем название из слага
+    // и открываем полноценный демо-режим, а не пустую главную страницу!
+    const fallbackName = cleanSlug
+      .split('-')
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
+
+    return NextResponse.redirect(
+      new URL(`/?demo=1&name=${encodeURIComponent(fallbackName || 'Автосервис')}`, req.url),
+      307
+    );
   } catch (err) {
     console.error('Short link redirect error:', err);
-    return NextResponse.redirect(new URL('/', req.url), 307);
+    return NextResponse.redirect(new URL('/?demo=1', req.url), 307);
   }
 }

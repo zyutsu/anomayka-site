@@ -362,12 +362,13 @@ export function getDatabase(): DatabaseSchema {
 
 // Асинхронное получение базы данных с централизованным хранилищем Vercel Blob
 export async function getDatabaseAsync(): Promise<DatabaseSchema> {
-  // 1. Всегда пытаемся забрать самую свежую версию из Vercel Blob
+  // 1. Всегда пытаемся забрать самую свежую версию из Vercel Blob с таймаутом 1.5 сек
   try {
     const res = await fetch(`${VERCEL_BLOB_DB_URL}?t=${Date.now()}`, {
       cache: 'no-store',
       next: { revalidate: 0 },
       headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' },
+      signal: AbortSignal.timeout(1500),
     });
     if (res.ok) {
       const cloudDb: DatabaseSchema = await res.json();
@@ -382,7 +383,7 @@ export async function getDatabaseAsync(): Promise<DatabaseSchema> {
       }
     }
   } catch (blobErr) {
-    // Игнорируем сетевые ошибки и используем локальный fallback
+    // При таймауте или сетевых ошибках мгновенно используем локальный fallback
   }
 
   // 2. Fallback на локальный синхронный getDatabase

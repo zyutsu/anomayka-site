@@ -69,20 +69,42 @@ function translitSlug(text: string): string {
     .substring(0, 32);
 }
 
-// Сжатие полезной нагрузки в base64url (stateless компактная ссылка)
-function encodeBase64UrlJson(obj: Record<string, any>): string {
-  try {
-    const jsonStr = JSON.stringify(obj);
-    const utf8Bytes = encodeURIComponent(jsonStr).replace(/%([0-9A-F]{2})/g, (_, p1) =>
-      String.fromCharCode(parseInt(p1, 16))
-    );
-    return btoa(utf8Bytes)
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_")
-      .replace(/=+$/, "");
-  } catch (e) {
-    return "";
+// Надежное кроссбраузерное копирование в буфер обмена без блокировок
+function copyToClipboard(text: string): boolean {
+  if (typeof window === "undefined") return false;
+
+  let successful = false;
+
+  // 1. Попытка через современный navigator.clipboard
+  if (navigator?.clipboard?.writeText) {
+    try {
+      navigator.clipboard.writeText(text);
+      successful = true;
+    } catch (e) {
+      successful = false;
+    }
   }
+
+  // 2. Резервный проверенный fallback через временный textarea
+  if (!successful) {
+    try {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.style.position = "fixed";
+      textArea.style.left = "-9999px";
+      textArea.style.top = "-9999px";
+      textArea.style.opacity = "0";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      successful = document.execCommand("copy");
+      document.body.removeChild(textArea);
+    } catch (err) {
+      successful = false;
+    }
+  }
+
+  return successful;
 }
 
 export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettings }) {
@@ -107,9 +129,9 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
     "tuning",
   ]);
 
+  const [linkMode, setLinkMode] = useState<"short" | "direct">("short");
   const [copiedLink, setCopiedLink] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [isShortening, setIsShortening] = useState(false);
   const [savedDemos, setSavedDemos] = useState<SavedDemoItem[]>([]);
   const [origin, setOrigin] = useState("");
 
@@ -127,7 +149,7 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
     }
   }, []);
 
-  // При изменении названия сервиса обновляем слаг, если пользователь не менял его вручную
+  // При изменении названия сервиса обновляем слаг
   const handleNameChange = (val: string) => {
     setName(val);
     const newSlug = translitSlug(val);
@@ -137,7 +159,7 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
   const toggleCategory = (catSlug: string) => {
     setSelectedCats((prev) => {
       if (prev.includes(catSlug)) {
-        if (prev.length === 1) return prev; // хотя бы одна категория должна остаться
+        if (prev.length === 1) return prev;
         return prev.filter((c) => c !== catSlug);
       } else {
         return [...prev, catSlug];
@@ -145,25 +167,7 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
     });
   };
 
-  // Компактный stateless slug (base64url)
-  const getStatelessSlug = () => {
-    const compact: Record<string, any> = {};
-    if (name.trim()) compact.n = name.trim();
-    if (phone.trim()) compact.p = phone.trim();
-    if (city.trim()) compact.c = city.trim();
-    if (address.trim()) compact.a = address.trim();
-    if (mapUrl.trim()) compact.m = mapUrl.trim();
-    if (accentColor) compact.clr = accentColor.replace("#", "");
-    if (logoUrl.trim()) compact.l = logoUrl.trim();
-    if (slogan.trim()) compact.s = slogan.trim();
-    if (serviceType) compact.t = serviceType;
-    if (selectedCats.length > 0 && selectedCats.length < DEMO_CATEGORIES.length) {
-      compact.cats = selectedCats;
-    }
-    return encodeBase64UrlJson(compact);
-  };
-
-  // Генерация полного URL демки со всеми параметрами
+  // Генерация полного прямого URL со всеми параметрами (автономный, работает всегда)
   const generateFullUrl = () => {
     const base = origin || (typeof window !== "undefined" ? window.location.origin : "https://vibe-rho-bay.vercel.app");
     const params = new URLSearchParams();
@@ -188,48 +192,50 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
   const finalFullUrl = generateFullUrl();
   const cleanSlug = translitSlug(slug) || "demo";
   const baseOrigin = origin || (typeof window !== "undefined" ? window.location.origin : "https://vibe-rho-bay.vercel.app");
+  
+  // Короткая ссылка вида /d/rs-vykhlop
   const displayShortUrl = `${baseOrigin}/d/${cleanSlug}`;
 
-  // Копирование короткой ссылки с регистрацией в базе /api/shorten
-  const handleCopyShortLink = async () => {
-    setIsShortening(true);
-    let targetLink = displayShortUrl;
+  // Активная ссылка в зависимости от выбранного режима
+  const currentActiveUrl = linkMode === "short" ? displayShortUrl : finalFullUrl;
 
-    try {
-      const res = await fetch("/api/shorten", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          slug: cleanSlug,
-          url: finalFullUrl,
-          name: name.trim(),
-        }),
-      });
+  // Регистрация слага в базе данных (в фоне)
+  const registerShortLink = () => {
+    fetch("/api/shorten", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        slug: cleanSlug,
+        url: finalFullUrl,
+        name: name.trim(),
+      }),
+    }).catch((e) => console.error("Error registering short link:", e));
+  };
 
-      if (res.ok) {
-        const data = await res.json();
-        if (data.shortUrl) {
-          targetLink = `${baseOrigin}${data.shortUrl}`;
-        }
-      } else {
-        // Fallback на компактный base64url slug
-        const b64 = getStatelessSlug();
-        if (b64) targetLink = `${baseOrigin}/d/${b64}`;
-      }
-    } catch (e) {
-      const b64 = getStatelessSlug();
-      if (b64) targetLink = `${baseOrigin}/d/${b64}`;
-    } finally {
-      setIsShortening(false);
-    }
+  // Автоматически регистрируем слаг при изменении параметров с небольшой задержкой (debounce)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      registerShortLink();
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [cleanSlug, finalFullUrl, name]);
 
-    await navigator.clipboard.writeText(targetLink);
+  // Мгновенное синхронное копирование ссылки
+  const handleCopyLink = () => {
+    // 1. СРАЗУ синхронно в первую миллисекунду копируем в буфер обмена
+    copyToClipboard(currentActiveUrl);
     setCopiedLink(true);
-    saveToHistory(targetLink);
+
+    // 2. В фоне регистрируем слаг в базе
+    registerShortLink();
+
+    // 3. Сохраняем в локальную историю
+    saveToHistory(currentActiveUrl);
+
     setTimeout(() => setCopiedLink(false), 2500);
   };
 
-  const saveToHistory = (shortLink: string) => {
+  const saveToHistory = (linkToSave: string) => {
     if (!name.trim()) return;
     const newItem: SavedDemoItem = {
       id: Date.now().toString(),
@@ -238,7 +244,7 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
       city: city.trim(),
       color: accentColor,
       url: finalFullUrl,
-      shortUrl: shortLink,
+      shortUrl: linkToSave,
       createdAt: new Date().toLocaleDateString("ru-RU", {
         day: "2-digit",
         month: "2-digit",
@@ -361,11 +367,10 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
             <span>Инструмент быстрых продаж</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-theme-title tracking-tight">
-            Генератор Коротких Демо-ссылок
+            Генератор Демо-ссылок для клиентов
           </h2>
           <p className="text-xs sm:text-sm text-theme-muted max-w-2xl leading-relaxed">
-            Создайте красивую короткую ссылку вида <strong className="text-theme-title">/d/rs-vykhlop</strong> с выбором категорий услуг, 
-            брендовым цветом, логотипом и точкой на Яндекс Картах. Клиент открывает и сразу видит чистый готовый сайт под свой бизнес.
+            Вбейте название сервиса и телефон. Система мгновенно создаст персональную ссылку с нужными услугами, цветом и картой.
           </p>
         </div>
 
@@ -442,7 +447,7 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
                   />
                 </div>
                 <span className="text-[10px] text-theme-muted mt-1 block">
-                  Будет сгенерирована ссылка: <strong>{displayShortUrl}</strong>
+                  Адрес ссылки: <strong>{displayShortUrl}</strong>
                 </span>
               </div>
 
@@ -499,7 +504,7 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
                   })}
                 </div>
                 <span className="text-[10px] text-theme-muted block">
-                  В демке отобразятся только выбранные направления. Также клиент или менеджер сможет менять цены и услуги в панели управления (/admin).
+                  В демке будут видны только выбранные направления. Внутри демки можно менять цены и услуги в панели управления (/admin).
                 </span>
               </div>
 
@@ -659,33 +664,60 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
           </div>
         </div>
 
-        {/* Результат: Готовая короткая ссылка и История */}
+        {/* Результат: Готовая ссылка и История */}
         <div className="lg:col-span-5 space-y-6">
-          {/* Блок готовой короткой ссылки */}
+          {/* Блок готовой ссылки */}
           <div className="p-6 rounded-3xl bg-brand-surface border border-brand-accent/30 shadow-xl shadow-brand-accent/5 space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-black uppercase text-brand-accent tracking-wider flex items-center gap-1.5">
                 <Zap className="w-4 h-4" />
-                <span>Короткая ссылка для клиента</span>
+                <span>Ссылка для отправки</span>
               </span>
-              <span
-                className="w-2.5 h-2.5 rounded-full"
-                style={{ backgroundColor: accentColor }}
-                title="Цвет темы"
-              />
+
+              {/* Переключатель вида ссылки */}
+              <div className="flex items-center bg-black/40 p-0.5 rounded-xl border border-brand-border text-[10px] font-semibold">
+                <button
+                  type="button"
+                  onClick={() => setLinkMode("short")}
+                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                    linkMode === "short" ? "bg-brand-accent text-white font-bold" : "text-theme-muted hover:text-white"
+                  }`}
+                >
+                  Короткая
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLinkMode("direct")}
+                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                    linkMode === "direct" ? "bg-brand-accent text-white font-bold" : "text-theme-muted hover:text-white"
+                  }`}
+                >
+                  Прямая
+                </button>
+              </div>
             </div>
 
-            {/* Поле короткой ссылки */}
-            <div className="p-3.5 rounded-2xl bg-black/50 border border-brand-accent/40 font-mono text-sm font-bold text-brand-accent break-all select-all flex items-center justify-between gap-2">
-              <span className="truncate">{displayShortUrl}</span>
+            {/* Поле ссылки с кликабельным выделением */}
+            <div
+              onClick={(e) => {
+                const target = e.currentTarget;
+                const range = document.createRange();
+                range.selectNodeContents(target);
+                const sel = window.getSelection();
+                sel?.removeAllRanges();
+                sel?.addRange(range);
+              }}
+              title="Нажмите, чтобы выделить всю ссылку"
+              className="p-3.5 rounded-2xl bg-black/50 border border-brand-accent/40 font-mono text-xs font-bold text-brand-accent break-all select-all flex items-center justify-between gap-2 cursor-pointer hover:border-brand-accent transition-colors"
+            >
+              <span className="break-all">{currentActiveUrl}</span>
               <Link2 className="w-4 h-4 shrink-0 text-brand-accent/70" />
             </div>
 
-            {/* Кнопки действий с короткой ссылкой */}
+            {/* Кнопки действий */}
             <div className="grid grid-cols-2 gap-2.5">
               <Button
-                onClick={handleCopyShortLink}
-                disabled={isShortening}
+                onClick={handleCopyLink}
                 className="w-full flex items-center justify-center gap-2 cursor-pointer bg-brand-accent hover:opacity-90 font-bold"
               >
                 {copiedLink ? (
@@ -696,13 +728,13 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
                 ) : (
                   <>
                     <Copy className="w-4 h-4" />
-                    <span>{isShortening ? "Создание..." : "Копировать"}</span>
+                    <span>Копировать</span>
                   </>
                 )}
               </Button>
 
               <a
-                href={displayShortUrl}
+                href={finalFullUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full"
@@ -760,7 +792,7 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
                       <button
                         onClick={() => {
                           const toCopy = item.shortUrl || item.url;
-                          navigator.clipboard.writeText(toCopy);
+                          copyToClipboard(toCopy);
                           alert(`Ссылка для «${item.name}» скопирована!`);
                         }}
                         className="p-1.5 rounded-lg hover:bg-white/10 text-theme-muted hover:text-white transition-colors cursor-pointer"
@@ -769,7 +801,7 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
                         <Copy className="w-3.5 h-3.5" />
                       </button>
                       <a
-                        href={item.shortUrl || item.url}
+                        href={item.url || item.shortUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="p-1.5 rounded-lg hover:bg-white/10 text-theme-muted hover:text-white transition-colors"
