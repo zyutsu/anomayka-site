@@ -317,13 +317,14 @@ export function getDatabase(): DatabaseSchema {
           {
             id: 'adm-1',
             email: 'admin@anomayka.ru',
-            passwordHash: '3a3277ca357d39ba330f04f17a588716013283272bd5412b430c0cd57c3ace9c', // Хеш безопасного пароля AutoPro#2026
+            passwordHash: '748050861a166e96193053a9b3a229e436d160cb11660ec1845d45340440de08', // Хеш пароля основного сайта qwertyzxcinside337
             name: 'Главный Администратор',
             role: 'owner'
           }
         ],
         faqs: DEFAULT_FAQS,
-        reviews: DEFAULT_REVIEWS
+        reviews: DEFAULT_REVIEWS,
+        shortLinks: []
       };
       try {
         fs.writeFileSync(DB_FILE, JSON.stringify(initialDb, null, 2), 'utf-8');

@@ -49,6 +49,23 @@ export function generateMonogramLogo(name: string, accentColor: string = "#2563e
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
+// Декодер base64url JSON полезной нагрузки для компактных ссылок
+function decodeBase64UrlJson(str: string): Record<string, any> | null {
+  try {
+    let base64 = str.replace(/-/g, "+").replace(/_/g, "/");
+    while (base64.length % 4) base64 += "=";
+    const jsonStr = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+    return JSON.parse(jsonStr);
+  } catch (e) {
+    return null;
+  }
+}
+
 interface BrandContextValue {
   brand: BrandSettings;
   isDemo: boolean;
@@ -157,20 +174,46 @@ export function BrandProvider({
       const urlParams = new URLSearchParams(window.location.search);
       const isReset = urlParams.get("demo") === "reset" || urlParams.get("reset") === "1";
 
-      const urlName = urlParams.get("name");
-      const urlPhone = urlParams.get("phone");
-      const urlCity = urlParams.get("city");
-      const urlAddress = urlParams.get("address");
-      const urlColor = urlParams.get("color");
-      const urlBg = urlParams.get("bg");
-      const urlLogo = urlParams.get("logo");
-      const urlSlogan = urlParams.get("slogan");
-      const urlType = urlParams.get("type");
-      const urlMap = urlParams.get("map") || urlParams.get("mapUrl");
-      const isDemoFlag = urlParams.get("demo") === "1" || urlParams.get("demo") === "true";
+      // Поддержка сжатого полезного объекта payload (?d=...)
+      const compressedData = urlParams.get("d");
+      let decodedData: Record<string, any> = {};
+      if (compressedData) {
+        decodedData = decodeBase64UrlJson(compressedData) || {};
+      }
+
+      const urlName = urlParams.get("name") || urlParams.get("n") || decodedData.name || decodedData.n;
+      const urlPhone = urlParams.get("phone") || urlParams.get("p") || decodedData.phone || decodedData.p;
+      const urlCity = urlParams.get("city") || urlParams.get("c") || decodedData.city || decodedData.c;
+      const urlAddress = urlParams.get("address") || urlParams.get("a") || decodedData.address || decodedData.a;
+      const urlColor = urlParams.get("color") || urlParams.get("clr") || decodedData.color || decodedData.clr;
+      const urlBg = urlParams.get("bg") || decodedData.bg;
+      const urlLogo = urlParams.get("logo") || urlParams.get("l") || decodedData.logo || decodedData.l;
+      const urlSlogan = urlParams.get("slogan") || urlParams.get("s") || decodedData.slogan || decodedData.s;
+      const urlType = urlParams.get("type") || urlParams.get("t") || decodedData.type || decodedData.t;
+      const urlMap =
+        urlParams.get("map") ||
+        urlParams.get("mapUrl") ||
+        urlParams.get("m") ||
+        decodedData.map ||
+        decodedData.mapUrl ||
+        decodedData.m;
+      const urlCats = urlParams.get("cats") || decodedData.cats;
+      const isDemoFlag =
+        urlParams.get("demo") === "1" ||
+        urlParams.get("demo") === "true" ||
+        Boolean(compressedData);
 
       const hasUrlParams = Boolean(
-        urlName || urlPhone || urlCity || urlAddress || urlColor || urlLogo || urlType || urlMap || isDemoFlag
+        urlName ||
+          urlPhone ||
+          urlCity ||
+          urlAddress ||
+          urlColor ||
+          urlLogo ||
+          urlType ||
+          urlMap ||
+          urlCats ||
+          isDemoFlag
       );
 
       // ЕСЛИ пользователь открыл главную страницу или админку по прямой чистой ссылке (без параметров),
@@ -295,12 +338,50 @@ export function BrandProvider({
         }
         if (activeOverride.slogan) queryParams.set("slogan", activeOverride.slogan);
         if (activeOverride.demoType) queryParams.set("type", activeOverride.demoType);
+        if (urlCats) {
+          const catsParam = Array.isArray(urlCats) ? urlCats.join(",") : String(urlCats);
+          queryParams.set("cats", catsParam);
+        }
         const qStr = queryParams.toString();
 
         setDemoQuery(qStr);
         // Сохраняем ТОЛЬКО в sessionStorage для переходов внутри текущей вкладки
         sessionStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(activeOverride));
         sessionStorage.setItem("anomayka_demo_query", qStr);
+
+        // Если переданы категории услуг для этой демки и они еще не инициализированы
+        if (urlCats && (!sessionStorage.getItem("anomayka_demo_categories") || !isSameDemoSession)) {
+          const catFilter = (typeof urlCats === "string" ? urlCats.split(",") : Array.isArray(urlCats) ? urlCats : [])
+            .map((s: string) => String(s).trim().toLowerCase())
+            .filter(Boolean);
+
+          if (catFilter.length > 0) {
+            fetch("/api/categories")
+              .then((res) => (res.ok ? res.json() : []))
+              .then((allCats: any[]) => {
+                if (!Array.isArray(allCats)) return;
+                const filteredCats = allCats.filter(
+                  (c) =>
+                    catFilter.includes(String(c.id).toLowerCase()) ||
+                    catFilter.includes(String(c.slug).toLowerCase())
+                );
+                if (filteredCats.length > 0) {
+                  sessionStorage.setItem("anomayka_demo_categories", JSON.stringify(filteredCats));
+                  fetch("/api/services?all=true")
+                    .then((res) => (res.ok ? res.json() : []))
+                    .then((allSrvs: any[]) => {
+                      if (!Array.isArray(allSrvs)) return;
+                      const allowedCatIds = new Set(filteredCats.map((c) => c.id));
+                      const filteredSrvs = allSrvs.filter((s) => allowedCatIds.has(s.categoryId));
+                      sessionStorage.setItem("anomayka_demo_services", JSON.stringify(filteredSrvs));
+                      window.dispatchEvent(new Event("anomayka_demo_data_updated"));
+                    })
+                    .catch(() => {});
+                }
+              })
+              .catch(() => {});
+          }
+        }
         // Полностью очищаем глобальный localStorage, чтобы он не засорял другие вкладки и прямые переходы
         localStorage.removeItem(DEMO_STORAGE_KEY);
         applyBrandOverride(activeOverride);

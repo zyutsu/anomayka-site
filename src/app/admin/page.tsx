@@ -142,7 +142,10 @@ export default function AdminPage() {
     try {
       const res = await fetch("/api/admin/auth", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(isDemo ? { "x-demo-mode": "1" } : {}),
+        },
         body: JSON.stringify({ email, password }),
       });
 
@@ -528,9 +531,9 @@ export default function AdminPage() {
 
           <form onSubmit={handleLoginSubmit} className="space-y-4">
             <Input
-              label="Email администратора"
-              type="email"
-              placeholder="admin@anomayka.ru"
+              label="Логин администратора"
+              type="text"
+              placeholder="anomayka"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -543,16 +546,18 @@ export default function AdminPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
-            <Button type="submit" size="lg" isLoading={isLoggingIn} className="w-full font-bold">
+            <Button type="submit" size="lg" isLoading={isLoggingIn} className="w-full font-bold cursor-pointer">
               Войти в админ-панель
             </Button>
           </form>
 
-          <div className="p-3 rounded-xl bg-brand-secondary border border-brand-border text-center text-xs text-theme-muted space-y-1">
-            <span className="block font-semibold text-theme-title">Данные для входа по умолчанию:</span>
-            <span>Логин: <code className="font-mono text-brand-accent">admin@anomayka.ru</code></span>
-            <span className="block">Пароль: <code className="font-mono text-brand-accent">AutoPro#2026</code></span>
-          </div>
+          {isDemo && (
+            <div className="p-3 rounded-xl bg-brand-secondary border border-brand-border text-center text-xs text-theme-muted space-y-1 animate-in fade-in">
+              <span className="block font-semibold text-theme-title">Данные для входа в демо:</span>
+              <span>Логин: <code className="font-mono text-brand-accent">anomayka</code></span>
+              <span className="block">Пароль: <code className="font-mono text-brand-accent">AutoPro#2026</code></span>
+            </div>
+          )}
         </div>
       </div>
     );

@@ -13,17 +13,23 @@ export function HomePopularServices({ initialServices }: { initialServices: Serv
   const [services, setServices] = useState<Service[]>(initialServices);
 
   useEffect(() => {
-    if (isDemo && typeof window !== "undefined") {
-      try {
-        const demoSrvs = sessionStorage.getItem("anomayka_demo_services");
-        if (demoSrvs) {
-          const parsed: Service[] = JSON.parse(demoSrvs);
-          setServices(parsed.filter((s) => s.isActive && s.isPopular).slice(0, 4));
-          return;
-        }
-      } catch (e) {}
-    }
-    setServices(initialServices.filter((s) => s.isActive && s.isPopular).slice(0, 4));
+    const update = () => {
+      if (isDemo && typeof window !== "undefined") {
+        try {
+          const demoSrvs = sessionStorage.getItem("anomayka_demo_services");
+          if (demoSrvs) {
+            const parsed: Service[] = JSON.parse(demoSrvs);
+            setServices(parsed.filter((s) => s.isActive && s.isPopular).slice(0, 4));
+            return;
+          }
+        } catch (e) {}
+      }
+      setServices(initialServices.filter((s) => s.isActive && s.isPopular).slice(0, 4));
+    };
+
+    update();
+    window.addEventListener("anomayka_demo_data_updated", update);
+    return () => window.removeEventListener("anomayka_demo_data_updated", update);
   }, [isDemo, initialServices]);
 
   if (services.length === 0) return null;

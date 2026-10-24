@@ -106,6 +106,13 @@ export interface ReviewItem {
   date: string;
 }
 
+export interface ShortDemoLink {
+  slug: string;
+  url: string;
+  name: string;
+  createdAt: string;
+}
+
 export interface DatabaseSchema {
   brand: BrandSettings;
   categories: Category[];
@@ -115,4 +122,5 @@ export interface DatabaseSchema {
   admins: AdminUser[];
   faqs: FAQItem[];
   reviews: ReviewItem[];
+  shortLinks?: ShortDemoLink[];
 }

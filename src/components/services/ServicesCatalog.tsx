@@ -24,26 +24,32 @@ export function ServicesCatalog({
 
   // В демо-режиме подгружаем изолированные категории и услуги текущей вкладки
   React.useEffect(() => {
-    if (isDemo && typeof window !== "undefined") {
-      try {
-        const demoCats = sessionStorage.getItem("anomayka_demo_categories");
-        if (demoCats) {
-          setCategories(JSON.parse(demoCats).filter((c: Category) => c.isActive));
-        } else {
-          setCategories(initialCategories);
-        }
+    const update = () => {
+      if (isDemo && typeof window !== "undefined") {
+        try {
+          const demoCats = sessionStorage.getItem("anomayka_demo_categories");
+          if (demoCats) {
+            setCategories(JSON.parse(demoCats).filter((c: Category) => c.isActive));
+          } else {
+            setCategories(initialCategories);
+          }
 
-        const demoSrvs = sessionStorage.getItem("anomayka_demo_services");
-        if (demoSrvs) {
-          setServices(JSON.parse(demoSrvs).filter((s: Service) => s.isActive));
-        } else {
-          setServices(initialServices);
-        }
-        return;
-      } catch (e) {}
-    }
-    setCategories(initialCategories);
-    setServices(initialServices);
+          const demoSrvs = sessionStorage.getItem("anomayka_demo_services");
+          if (demoSrvs) {
+            setServices(JSON.parse(demoSrvs).filter((s: Service) => s.isActive));
+          } else {
+            setServices(initialServices);
+          }
+          return;
+        } catch (e) {}
+      }
+      setCategories(initialCategories);
+      setServices(initialServices);
+    };
+
+    update();
+    window.addEventListener("anomayka_demo_data_updated", update);
+    return () => window.removeEventListener("anomayka_demo_data_updated", update);
   }, [isDemo, initialCategories, initialServices]);
 
   // Фильтрация/сортировка по demoType, если задан

@@ -11,17 +11,23 @@ export function HomeCategories({ initialCategories }: { initialCategories: Categ
   const [categories, setCategories] = useState<Category[]>(initialCategories);
 
   useEffect(() => {
-    if (isDemo && typeof window !== "undefined") {
-      try {
-        const demoCats = sessionStorage.getItem("anomayka_demo_categories");
-        if (demoCats) {
-          const parsed: Category[] = JSON.parse(demoCats);
-          setCategories(parsed.filter((c) => c.isActive));
-          return;
-        }
-      } catch (e) {}
-    }
-    setCategories(initialCategories.filter((c) => c.isActive));
+    const update = () => {
+      if (isDemo && typeof window !== "undefined") {
+        try {
+          const demoCats = sessionStorage.getItem("anomayka_demo_categories");
+          if (demoCats) {
+            const parsed: Category[] = JSON.parse(demoCats);
+            setCategories(parsed.filter((c) => c.isActive));
+            return;
+          }
+        } catch (e) {}
+      }
+      setCategories(initialCategories.filter((c) => c.isActive));
+    };
+
+    update();
+    window.addEventListener("anomayka_demo_data_updated", update);
+    return () => window.removeEventListener("anomayka_demo_data_updated", update);
   }, [isDemo, initialCategories]);
 
   const getCategoryIcon = (iconName: string) => {

