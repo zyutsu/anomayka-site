@@ -48,15 +48,16 @@ export async function GET(
     const targetName = name.toLowerCase() !== 'автосервис' && name.toLowerCase() !== 'сто' ? `«${name}»` : (city ? `в г. ${city}` : '');
     const pitchText = `Здравствуйте! Увидел ваш автосервис ${targetName}. Собрал для вас готовый сайт с онлайн-записью и каталогом услуг:\n\n👉 ${shortUrl}\n\nПосмотрите с телефона, как вам? Мы можем внести любые правки под вас (ваши точные цены, услуги, фото и дизайн).`;
 
-    const tgProtocolUrl = cleanPhone ? `tg://resolve?phone=${cleanPhone}` : `https://t.me/share/url?url=${encodeURIComponent(shortUrl)}&text=${encodeURIComponent(pitchText)}`;
-    const tgShareUrl = `https://t.me/share/url?url=${encodeURIComponent(shortUrl)}&text=${encodeURIComponent(pitchText)}`;
+    const tgProtocolUrl = cleanPhone 
+      ? `tg://resolve?phone=${cleanPhone}&text=${encodeURIComponent(pitchText)}`
+      : `https://t.me/share/url?url=${encodeURIComponent(shortUrl)}&text=${encodeURIComponent(pitchText)}`;
 
-    // Отдаем HTML-шлюз с моментальным переходом в Telegram и копированием текста
+    // Отдаем HTML-шлюз с моментальным переходом прямо в чат Telegram без пересыла
     const html = `<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Переход в Telegram — ${name}</title>
+  <title>Открытие чата Telegram — ${name}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; }
@@ -66,22 +67,19 @@ export async function GET(
     .btn { display: block; width: 100%; padding: 14px; border-radius: 14px; font-weight: bold; text-decoration: none; margin-bottom: 12px; font-size: 15px; box-sizing: border-box; cursor: pointer; border: none; }
     .btn-tg { background: #0284c7; color: #fff; }
     .btn-tg:hover { background: #0369a1; }
-    .btn-share { background: #334155; color: #f1f5f9; }
-    .btn-share:hover { background: #475569; }
-    .badge { display: inline-block; padding: 4px 12px; background: rgba(16, 185, 129, 0.15); color: #34d399; border-radius: 999px; font-size: 12px; font-weight: bold; margin-bottom: 16px; border: 1px solid rgba(16, 185, 129, 0.3); }
-    .msg-preview { background: #0b1120; border: 1px solid #1e293b; border-radius: 12px; padding: 12px; font-size: 12px; color: #cbd5e1; text-align: left; white-space: pre-wrap; margin-bottom: 20px; max-height: 120px; overflow-y: auto; }
+    .badge { display: inline-block; padding: 6px 14px; background: rgba(16, 185, 129, 0.15); color: #34d399; border-radius: 999px; font-size: 12px; font-weight: bold; margin-bottom: 16px; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .msg-preview { background: #0b1120; border: 1px solid #1e293b; border-radius: 12px; padding: 12px; font-size: 12px; color: #cbd5e1; text-align: left; white-space: pre-wrap; margin-bottom: 20px; max-height: 140px; overflow-y: auto; }
   </style>
 </head>
 <body>
   <div class="card">
-    <div id="copyBadge" class="badge">Текст сообщения в буфере!</div>
+    <div id="copyBadge" class="badge">Текст сообщения готов</div>
     <h1>${name}</h1>
-    <p>Открываем диалог в Telegram. Текст сообщения автоматически скопирован — просто нажмите <b>Ctrl+V</b> и <b>Enter</b> в чате!</p>
+    <p>Открываем диалог в Telegram. Текст сообщения уже подставлен, а также скопирован в буфер (Ctrl+V) на случай блокировок браузера!</p>
     
     <div class="msg-preview">${pitchText}</div>
 
-    <a href="${tgProtocolUrl}" class="btn btn-tg" id="tgBtn">👉 Открыть чат в приложении Telegram</a>
-    <a href="${tgShareUrl}" class="btn btn-share" target="_blank">✈️ Отправить через Telegram (текст сразу в строке)</a>
+    <a href="${tgProtocolUrl}" class="btn btn-tg" id="tgBtn">👉 Открыть чат в Telegram</a>
   </div>
 
   <script>
@@ -89,10 +87,8 @@ export async function GET(
     if (navigator.clipboard) {
       navigator.clipboard.writeText(textToCopy).catch(() => {});
     }
-    // Автопереход в Telegram через 500мс
-    setTimeout(() => {
-      window.location.href = ${JSON.stringify(tgProtocolUrl)};
-    }, 400);
+    // Моментальный автопереход прямо в чат Telegram
+    window.location.href = ${JSON.stringify(tgProtocolUrl)};
   </script>
 </body>
 </html>`;
