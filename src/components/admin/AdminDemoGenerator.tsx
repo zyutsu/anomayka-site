@@ -25,6 +25,9 @@ import {
   Zap,
   SlidersHorizontal,
   Link2,
+  MessageSquare,
+  Send,
+  Smartphone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -131,9 +134,37 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
 
   const [linkMode, setLinkMode] = useState<"short" | "direct">("short");
   const [copiedLink, setCopiedLink] = useState(false);
+  const [pitchStyle, setPitchStyle] = useState<"friendly" | "business" | "tuning" | "short">("friendly");
+  const [copiedPitch, setCopiedPitch] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [savedDemos, setSavedDemos] = useState<SavedDemoItem[]>([]);
   const [origin, setOrigin] = useState("");
+
+  const getPitchText = (style: "friendly" | "business" | "tuning" | "short") => {
+    const sName = name.trim() || "Автосервис";
+    const link = currentActiveUrl;
+
+    switch (style) {
+      case "business":
+        return `Добрый день!\n\nБольшинство автовладельцев ищут сервис вечером или в выходные, когда телефон мастера уже занят или не отвечает. Чтобы не терять эти заявки, разработали современную систему онлайн-записи для автобизнеса.\n\nСпециально подготовил интерактивное демо под ${sName}:\n👉 ${link}\n\nЧто внутри:\n• Быстрая запись клиентов на ТО и ремонт без очередей\n• Каталог ваших услуг с актуальными ценами\n• Прямая кнопка маршрута в Яндекс.Картах с отзывами\n• Панель управления заявками со смартфона\n\nПосмотрите буквально пару минут с телефона. Будет интересно обсудить внедрение под ваш сервис?`;
+
+      case "tuning":
+        return `Здравствуйте!\n\nОбратил внимание на ваши работы по тюнингу и сервису в ${sName} — уровень огонь 🔥\n\nЧтобы клиентам было удобно сразу изучить ваши услуги (чип-тюнинг, выхлопные системы, дооснащение) и записаться на заезд в бокс, собрал готовый интерактивный сайт под ваш автоцентр:\n\n🏎 ${link}\n\nДизайн стильный, технологичный, отлично открывается со смартфона. Посмотрите, как вам такой формат для привлечения клиентов?`;
+
+      case "short":
+        return `Здравствуйте! Обратил внимание на ваш автосервис ${sName}.\n\nРазрабатываем современные сайты с онлайн-записью для автобизнеса. Собрал для вас готовое живое демо:\n📱 ${link}\n\nСайт адаптирован под смартфоны, клиентам удобно записываться в 2 клика. Если актуально привлечь больше клиентов без лишних звонков — дайте знать!`;
+
+      default:
+        return `Здравствуйте!\n\nОбратил внимание на ваш автосервис ${sName}. Решил не писать длинных коммерческих предложений, а сразу показать на деле — собрал для вас готовый сайт с онлайн-записью клиентов, каталогом услуг и точкой на Яндекс.Картах:\n\n👉 ${link}\n\nСайт адаптирован под телефоны, клиентам очень удобно записываться в 2 клика без звонков администратору.\n\nПосмотрите пару минут со смартфона. Если понравится — можем запустить его под ваш сервис за 1 день. Как вам такой формат?`;
+    }
+  };
+
+  const handleCopyPitch = () => {
+    const text = getPitchText(pitchStyle);
+    copyToClipboard(text);
+    setCopiedPitch(true);
+    setTimeout(() => setCopiedPitch(false), 2500);
+  };
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -758,6 +789,113 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
               <p className="text-[11px] text-theme-muted leading-relaxed">
                 Внутри созданной демки можно войти в панель управления (<code className="text-brand-accent font-bold">/admin</code>) под логином <code className="text-white font-bold">anomayka</code> и паролем <code className="text-white font-bold">AutoPro#2026</code>. Любые правки цен и услуг безопасны и не меняют основной сайт!
               </p>
+            </div>
+          </div>
+
+          {/* Блок готового сообщения для рассылки клиентам */}
+          <div className="p-6 rounded-3xl bg-brand-surface border border-brand-border space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-brand-accent" />
+                <h4 className="text-xs font-bold uppercase tracking-wider text-theme-title">
+                  Текст для отправки клиенту
+                </h4>
+              </div>
+              <span className="text-[10px] text-brand-accent font-medium">1 клик — и готово</span>
+            </div>
+
+            {/* Выбор стиля сообщения */}
+            <div className="grid grid-cols-4 gap-1.5 p-1 rounded-xl bg-black/40 border border-brand-border text-[11px]">
+              <button
+                type="button"
+                onClick={() => setPitchStyle("friendly")}
+                className={`py-1.5 px-2 rounded-lg font-medium transition-all cursor-pointer ${
+                  pitchStyle === "friendly"
+                    ? "bg-brand-accent text-white font-bold shadow-sm"
+                    : "text-theme-muted hover:text-white"
+                }`}
+              >
+                Живой
+              </button>
+              <button
+                type="button"
+                onClick={() => setPitchStyle("business")}
+                className={`py-1.5 px-2 rounded-lg font-medium transition-all cursor-pointer ${
+                  pitchStyle === "business"
+                    ? "bg-brand-accent text-white font-bold shadow-sm"
+                    : "text-theme-muted hover:text-white"
+                }`}
+              >
+                Деловой
+              </button>
+              <button
+                type="button"
+                onClick={() => setPitchStyle("tuning")}
+                className={`py-1.5 px-2 rounded-lg font-medium transition-all cursor-pointer ${
+                  pitchStyle === "tuning"
+                    ? "bg-brand-accent text-white font-bold shadow-sm"
+                    : "text-theme-muted hover:text-white"
+                }`}
+              >
+                Тюнинг
+              </button>
+              <button
+                type="button"
+                onClick={() => setPitchStyle("short")}
+                className={`py-1.5 px-2 rounded-lg font-medium transition-all cursor-pointer ${
+                  pitchStyle === "short"
+                    ? "bg-brand-accent text-white font-bold shadow-sm"
+                    : "text-theme-muted hover:text-white"
+                }`}
+              >
+                Краткий
+              </button>
+            </div>
+
+            {/* Предпросмотр текста */}
+            <div className="p-3.5 rounded-2xl bg-black/50 border border-brand-border/60 text-xs text-slate-300 leading-relaxed max-h-48 overflow-y-auto whitespace-pre-wrap select-all font-sans">
+              {getPitchText(pitchStyle)}
+            </div>
+
+            {/* Кнопки копирования и быстрой отправки */}
+            <div className="space-y-2">
+              <Button
+                onClick={handleCopyPitch}
+                className="w-full flex items-center justify-center gap-2 cursor-pointer bg-white/10 hover:bg-white/20 text-white font-bold border border-white/20"
+              >
+                {copiedPitch ? (
+                  <>
+                    <Check className="w-4 h-4 text-emerald-300 stroke-[3]" />
+                    <span>Текст скопирован!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4" />
+                    <span>Скопировать готовое сообщение</span>
+                  </>
+                )}
+              </Button>
+
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <a
+                  href={`https://wa.me/?text=${encodeURIComponent(getPitchText(pitchStyle))}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 flex items-center justify-center gap-1.5 font-semibold transition-colors"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>В WhatsApp</span>
+                </a>
+                <a
+                  href={`https://t.me/share/url?url=${encodeURIComponent(currentActiveUrl)}&text=${encodeURIComponent(getPitchText(pitchStyle).replace(currentActiveUrl, ""))}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-2 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/20 flex items-center justify-center gap-1.5 font-semibold transition-colors"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>В Telegram</span>
+                </a>
+              </div>
             </div>
           </div>
 

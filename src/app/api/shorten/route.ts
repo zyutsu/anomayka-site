@@ -1,12 +1,50 @@
 import { NextResponse } from 'next/server';
-import { getDatabase, saveDatabase, saveDatabaseAsync } from '@/lib/db';
+import { getDatabase, getDatabaseAsync, saveDatabase, saveDatabaseAsync } from '@/lib/db';
 import { ShortDemoLink } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   try {
-    const { slug, url, name } = await req.json();
+    const body = await req.json();
+
+    // Пакетное сохранение массива ссылок (batch)
+    if (Array.isArray(body.links)) {
+      const db = await getDatabaseAsync();
+      if (!db.shortLinks) {
+        db.shortLinks = [];
+      }
+
+      for (const item of body.links) {
+        if (!item.slug || !item.url) continue;
+        const cleanSlug = item.slug.toLowerCase().trim().replace(/[^a-z0-9_-]/g, '-').replace(/-+/g, '-');
+        const existingIndex = db.shortLinks.findIndex((l) => l.slug.toLowerCase() === cleanSlug);
+        const linkItem: ShortDemoLink = {
+          slug: cleanSlug,
+          url: item.url,
+          name: item.name || 'Демо-презентация',
+          createdAt: new Date().toISOString(),
+        };
+
+        if (existingIndex >= 0) {
+          db.shortLinks[existingIndex] = linkItem;
+        } else {
+          db.shortLinks.push(linkItem);
+        }
+      }
+
+      saveDatabase(db);
+      await saveDatabaseAsync(db);
+
+      return NextResponse.json({
+        success: true,
+        count: body.links.length,
+        total: db.shortLinks.length,
+      });
+    }
+
+    // Одиночное сохранение
+    const { slug, url, name } = body;
 
     if (!url) {
       return NextResponse.json({ error: 'Не указан целевой URL' }, { status: 400 });
@@ -36,15 +74,12 @@ export async function POST(req: Request) {
       db.shortLinks[existingIndex] = linkItem;
     } else {
       db.shortLinks.unshift(linkItem);
-      if (db.shortLinks.length > 150) {
-        db.shortLinks = db.shortLinks.slice(0, 150);
+      if (db.shortLinks.length > 1000) {
+        db.shortLinks = db.shortLinks.slice(0, 1000);
       }
     }
 
-    // Мгновенное сохранение в локальную память и /tmp
     saveDatabase(db);
-
-    // Асинхронная выгрузка в облачный Blob без задержки ответа клиенту
     saveDatabaseAsync(db).catch((err) => console.error('Background blob save error:', err));
 
     return NextResponse.json({
