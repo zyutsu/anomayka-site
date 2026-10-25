@@ -148,7 +148,7 @@ export default function SendHubClient({
               className="inline-flex h-10 items-center justify-center gap-1.5 rounded-full border border-brand-border text-[12px] font-medium text-theme-title transition-colors hover:border-brand-accent/50"
             >
               <Smartphone className="h-3.5 w-3.5" />
-              Открыть чат в Telegram
+              Показать клиенту его сайт
             </a>
           </div>
 
