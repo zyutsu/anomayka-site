@@ -69,18 +69,18 @@ export function AdminSchedule({
   return (
     <div className="space-y-6 max-w-4xl">
       <div>
-        <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+        <h2 className="text-xl font-bold text-theme-title tracking-tight flex items-center gap-2">
           <Clock className="w-5 h-5 text-brand-accent" />
           График работы и управление слотами
         </h2>
-        <p className="text-xs text-slate-400 mt-1">
+        <p className="text-xs text-theme-muted mt-1">
           Настройка рабочих часов сервиса, шага формирования временной сетки и блокировка технологических окон
         </p>
       </div>
 
       {/* Основные часы работы */}
-      <form onSubmit={handleSaveHours} className="p-6 rounded-2xl bg-brand-surface border border-white/10 space-y-4">
-        <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+      <form onSubmit={handleSaveHours} className="p-6 rounded-2xl bg-brand-surface border border-brand-border space-y-4">
+        <h3 className="text-sm font-bold text-theme-title uppercase tracking-wider">
           Рабочие часы автоцентра
         </h3>
 
@@ -102,13 +102,13 @@ export function AdminSchedule({
             required
           />
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1.5">
+            <label className="block text-xs font-medium text-theme-title mb-1.5">
               Базовый шаг слотов записи
             </label>
             <select
               value={slotStep}
               onChange={(e) => setSlotStep(Number(e.target.value))}
-              className="w-full h-11 px-3 rounded-xl bg-black/40 border border-white/10 text-xs text-white focus:outline-none focus:border-brand-accent"
+              className="w-full h-11 px-3 rounded-xl bg-[var(--brand-secondary)] border border-brand-border text-xs text-theme-title focus:outline-none focus:border-brand-accent"
             >
               <option value={15}>15 минут (Экспресс-услуги)</option>
               <option value={30}>30 минут (Рекомендуется)</option>
@@ -125,17 +125,17 @@ export function AdminSchedule({
       </form>
 
       {/* Блокировка слотов (Обед, техперерыв, праздники) */}
-      <div className="p-6 rounded-2xl bg-brand-surface border border-white/10 space-y-4">
-        <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+      <div className="p-6 rounded-2xl bg-brand-surface border border-brand-border space-y-4">
+        <h3 className="text-sm font-bold text-theme-title uppercase tracking-wider flex items-center gap-2">
           <ShieldAlert className="w-4 h-4 text-amber-400" />
           Блокировка слотов и технологические окна
         </h3>
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-theme-muted">
           Заблокированное время автоматически становится недоступным для записи клиентов на сайте
         </p>
 
         {/* Форма добавления блокировки */}
-        <form onSubmit={handleAddBlockSubmit} className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs items-end bg-black/30 p-4 rounded-xl border border-white/5">
+        <form onSubmit={handleAddBlockSubmit} className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs items-end bg-[var(--brand-secondary)] p-4 rounded-xl border border-brand-border">
           <Input
             label="Дата"
             type="date"
@@ -167,24 +167,24 @@ export function AdminSchedule({
         {/* Список активных блокировок */}
         <div className="space-y-2 pt-2">
           {blockedSlots.length === 0 ? (
-            <p className="text-xs text-slate-400 py-3 text-center">
+            <p className="text-xs text-theme-muted py-3 text-center">
               Нет активных блокировок слотов. Все рабочие часы открыты для записи.
             </p>
           ) : (
             blockedSlots.map((bs) => (
               <div
                 key={bs.id}
-                className="p-3 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between text-xs"
+                className="p-3 rounded-xl bg-[var(--brand-secondary)] border border-brand-border flex items-center justify-between text-xs"
               >
                 <div className="flex items-center gap-3">
                   <span className="font-mono text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded">
                     {bs.date} {bs.startTime} - {bs.endTime}
                   </span>
-                  <span className="text-white font-medium">{bs.reason}</span>
+                  <span className="text-theme-title font-medium">{bs.reason}</span>
                 </div>
                 <button
                   onClick={() => onDeleteBlockedSlot(bs.id)}
-                  className="p-1 text-slate-400 hover:text-red-400 transition-colors"
+                  className="p-1 text-theme-muted hover:text-red-400 transition-colors"
                   title="Удалить блокировку"
                 >
                   <Trash2 className="w-4 h-4" />

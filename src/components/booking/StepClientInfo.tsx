@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
+import { AlertCircle, ArrowLeft, CalendarDays, Check, Clock3 } from "lucide-react";
 import { Service } from "@/lib/types";
-import { ArrowLeft, ShieldCheck, Check, Clock, Calendar, AlertCircle } from "lucide-react";
 import { formatPrice, formatDuration, formatDateRu } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -43,17 +43,15 @@ export function StepClientInfo({
     setValidationError("");
 
     if (!name.trim()) {
-      setValidationError("Пожалуйста, укажите ваше имя");
+      setValidationError("Укажите, пожалуйста, ваше имя");
       return;
     }
-
-    if (!phone.trim() || phone.replace(/\D/g, "").length < 10) {
-      setValidationError("Пожалуйста, укажите корректный номер телефона (не менее 10 цифр)");
+    if (phone.replace(/\D/g, "").length < 10) {
+      setValidationError("Укажите корректный номер телефона — не менее 10 цифр");
       return;
     }
-
     if (!consent) {
-      setValidationError("Необходимо согласие на обработку персональных данных");
+      setValidationError("Нужно согласие на обработку персональных данных");
       return;
     }
 
@@ -66,142 +64,138 @@ export function StepClientInfo({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       <div>
         <button
+          type="button"
           onClick={onBack}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-white mb-2 transition-colors cursor-pointer"
+          className="mb-3 inline-flex items-center gap-1.5 text-[12px] font-medium text-theme-muted transition-colors hover:text-theme-title"
         >
-          <ArrowLeft className="w-3.5 h-3.5" /> Назад к выбору времени
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Назад к выбору времени
         </button>
-        <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-          Шаг 4. Контактные данные
+        <p className="eyebrow mb-3">Шаг 4 из 5</p>
+        <h2 className="heading text-[clamp(1.5rem,3vw,2rem)] text-theme-title">
+          Осталось оставить контакты
         </h2>
-        <p className="text-sm text-slate-400 mt-1">
-          На этот номер придет подтверждение бронирования и ссылка для управления записью
+        <p className="mt-2 max-w-xl text-[13px] leading-relaxed text-theme-muted">
+          Имя и телефон — этого достаточно. Номер нужен, чтобы мастер мог уточнить
+          детали и напомнить о визите.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Форма ввода */}
-        <form onSubmit={handleSubmit} className="lg:col-span-2 space-y-4">
+      <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+        <form onSubmit={handleSubmit} className="space-y-4">
           {(validationError || errorMessage) && (
-            <div className="p-4 rounded-xl bg-red-950/40 border border-red-500/40 text-red-300 text-xs flex items-start gap-2.5">
-              <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2.5 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-[12px] text-red-300">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>{validationError || errorMessage}</span>
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid gap-3 sm:grid-cols-2">
             <Input
-              label="Ваше имя *"
-              placeholder="Константин"
+              label="Ваше имя"
+              placeholder="Например, Константин"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              autoComplete="name"
               required
             />
             <Input
-              label="Номер телефона *"
+              label="Телефон"
               type="tel"
               placeholder="+7 (999) 000-00-00"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
+              autoComplete="tel"
               required
             />
           </div>
 
           <Input
-            label="Марка и модель автомобиля"
-            placeholder="Например: BMW 530d или Audi A6 (желательно)"
+            label="Марка и модель автомобиля (необязательно)"
+            placeholder="BMW 530d, Audi A6…"
             value={carModel}
             onChange={(e) => setCarModel(e.target.value)}
           />
 
           <div className="space-y-1.5">
-            <label className="block text-xs font-medium text-slate-300">
-              Комментарий или пожелания мастеру
+            <label htmlFor="booking-comment" className="block text-xs font-medium text-theme-muted">
+              Комментарий мастеру (необязательно)
             </label>
             <textarea
+              id="booking-comment"
               rows={3}
-              placeholder="Дополнительные пожелания, свои расходники, жалобы на авто..."
+              placeholder="Свои расходники, жалобы на автомобиль, пожелания по времени…"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              className="w-full rounded-xl bg-black/40 border border-white/10 px-4 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-brand-accent focus:outline-none focus:ring-2 focus:ring-brand-accent/20 transition-all resize-none"
+              className="w-full resize-none rounded-xl border border-brand-border bg-[var(--brand-secondary)] px-4 py-3 text-sm text-theme-title transition-colors placeholder:text-theme-muted/60 focus:border-brand-accent focus:outline-none focus:ring-2 focus:ring-brand-accent/15"
             />
           </div>
 
-          <label className="flex items-start gap-3 cursor-pointer pt-2">
+          <label className="flex cursor-pointer items-start gap-3 pt-1">
             <input
               type="checkbox"
               checked={consent}
               onChange={(e) => setConsent(e.target.checked)}
-              className="mt-0.5 rounded border-white/20 text-brand-accent focus:ring-brand-accent h-4 w-4 bg-black/40"
+              className="mt-0.5 h-4 w-4 rounded border-brand-border bg-[var(--brand-secondary)] text-brand-accent focus:ring-brand-accent"
             />
-            <span className="text-xs text-slate-400 leading-relaxed select-none">
-              Я даю согласие на обработку персональных данных и получение уведомлений о статусе бронирования в соответствии с законом №152-ФЗ.
+            <span className="text-[11.5px] leading-relaxed text-theme-muted">
+              Согласен на обработку персональных данных для оформления записи
+              и уведомлений о статусе визита.
             </span>
           </label>
 
-          <div className="pt-4">
-            <Button
-              type="submit"
-              size="lg"
-              isLoading={isSubmitting}
-              className="w-full sm:w-auto h-15 px-10 text-base sm:text-lg font-black rounded-2xl shadow-2xl shadow-brand-accent/30 hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
-            >
-              <span>Подтвердить запись</span>
-              <Check className="w-5 h-5 ml-1" />
-            </Button>
-          </div>
+          <Button
+            type="submit"
+            size="lg"
+            isLoading={isSubmitting}
+            className="mt-2 h-12 w-full text-[13px] sm:w-auto sm:px-8"
+          >
+            Подтвердить запись
+            <Check className="h-4 w-4" />
+          </Button>
         </form>
 
-        {/* Сводка заказа (Сайдбар) */}
-        <div className="lg:col-span-1">
-          <div className="rounded-2xl bg-brand-surface border border-white/10 p-5 space-y-4 sticky top-24 shadow-xl">
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider">
-              Детали визита
-            </h3>
+        <aside className="h-fit rounded-2xl border border-brand-border bg-brand-surface p-5 lg:sticky lg:top-24">
+          <p className="mono-label mb-4">Ваш визит</p>
 
-            <div className="space-y-3 text-xs border-y border-white/10 py-4">
-              <div>
-                <span className="text-slate-400 block text-[11px]">Услуга:</span>
-                <span className="font-semibold text-white text-sm">{service.title}</span>
-              </div>
+          <p className="text-[14px] font-semibold leading-snug text-theme-title">
+            {service.title}
+          </p>
 
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400">Длительность:</span>
-                <span className="font-medium text-white flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5 text-brand-accent" />
-                  {formatDuration(service.durationMinutes)}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400">Дата:</span>
-                <span className="font-medium text-white flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5 text-brand-accent" />
-                  {formatDateRu(date)}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400">Время начала:</span>
-                <span className="font-bold text-brand-accent text-sm">{time}</span>
-              </div>
+          <dl className="mt-4 space-y-2.5 border-y border-brand-border py-4 text-[12px]">
+            <div className="flex items-center justify-between gap-3">
+              <dt className="inline-flex items-center gap-1.5 text-theme-muted">
+                <CalendarDays className="h-3.5 w-3.5" />
+                Дата
+              </dt>
+              <dd className="font-medium text-theme-title">{formatDateRu(date)}</dd>
             </div>
-
-            <div className="flex items-baseline justify-between pt-1">
-              <span className="text-slate-300 font-medium text-xs">Итого к оплате:</span>
-              <span className="text-xl font-extrabold text-white">
-                {formatPrice(service.price)}
-              </span>
+            <div className="flex items-center justify-between gap-3">
+              <dt className="inline-flex items-center gap-1.5 text-theme-muted">
+                <Clock3 className="h-3.5 w-3.5" />
+                Время
+              </dt>
+              <dd className="font-semibold text-brand-accent">{time}</dd>
             </div>
-            <p className="text-[11px] text-slate-400 leading-tight">
-              Оплата производится в кассе автоцентра после завершения и приемки работ.
-            </p>
+            <div className="flex items-center justify-between gap-3">
+              <dt className="text-theme-muted">Длительность</dt>
+              <dd className="font-medium text-theme-title">{formatDuration(service.durationMinutes)}</dd>
+            </div>
+          </dl>
+
+          <div className="mt-4 flex items-baseline justify-between">
+            <span className="text-[12px] text-theme-muted">Итого</span>
+            <span className="text-[20px] font-bold text-theme-title">{formatPrice(service.price)}</span>
           </div>
-        </div>
+          <p className="mt-2 text-[11px] leading-relaxed text-theme-muted">
+            Оплата — после выполнения работ. Предоплата не требуется.
+          </p>
+        </aside>
       </div>
     </div>
   );
 }
+

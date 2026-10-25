@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Booking, BookingStatus } from "@/lib/types";
-import { User, Phone, Calendar, Clock, Car, Check, X, RefreshCw, AlertCircle, ArrowRight, Ban, CheckCircle2, Star } from "lucide-react";
-import { formatPrice, formatDuration, formatDateRu } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { ArrowRight, Car, Check, RefreshCw, Star, X } from "lucide-react";
+import { Booking } from "@/lib/types";
+import { formatDateRu, formatDuration, formatPrice } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { useBrand } from "@/context/BrandContext";
 
 function AccountContent() {
@@ -16,583 +16,416 @@ function AccountContent() {
   const initialPhone = searchParams.get("phone") || "";
 
   const [phone, setPhone] = useState(initialPhone);
-  const [isAuthenticated, setIsAuthenticated] = useState(!!initialPhone);
+  const [authPhone, setAuthPhone] = useState(initialPhone);
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [searched, setSearched] = useState(false);
 
-  // Модалка переноса записи
-  const [rescheduleBooking, setRescheduleBooking] = useState<Booking | null>(null);
+  const [reschedule, setReschedule] = useState<Booking | null>(null);
   const [newDate, setNewDate] = useState("");
   const [newTime, setNewTime] = useState("");
-  const [isRescheduling, setIsRescheduling] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [notice, setNotice] = useState("");
 
-  // Модалка отзыва о выполненной работе
-  const [reviewBooking, setReviewBooking] = useState<Booking | null>(null);
-  const [rating, setRating] = useState<number>(5);
-  const [reviewText, setReviewText] = useState("");
-  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
-  const [reviewSuccess, setReviewSuccess] = useState(false);
-  const [reviewError, setReviewError] = useState("");
-
-  const handleSubmitReview = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!reviewBooking || !reviewText.trim()) return;
-
-    setIsSubmittingReview(true);
-    setReviewError("");
+  const load = async (target: string) => {
+    setLoading(true);
+    setError("");
+    setSearched(true);
     try {
-      const res = await fetch("/api/reviews", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          author: reviewBooking.clientName,
-          car: reviewBooking.carModel,
-          service: reviewBooking.serviceTitle,
-          rating,
-          text: reviewText.trim(),
-          bookingId: reviewBooking.id,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Ошибка сохранения отзыва");
-      }
-
-      setBookings((prev) =>
-        prev.map((b) => (b.id === reviewBooking.id ? { ...b, hasReview: true } : b))
-      );
-      setReviewSuccess(true);
-      setTimeout(() => {
-        setReviewSuccess(false);
-        setReviewBooking(null);
-        setReviewText("");
-      }, 2500);
-    } catch (err: any) {
-      setReviewError(err.message || "Ошибка отправки отзыва");
-    } finally {
-      setIsSubmittingReview(false);
-    }
-  };
-
-
-  const fetchClientBookings = async (targetPhone: string) => {
-    setIsLoading(true);
-    setErrorMsg("");
-    try {
-      const res = await fetch(`/api/bookings?phone=${encodeURIComponent(targetPhone)}`, {
+      const res = await fetch("/api/bookings?phone=" + encodeURIComponent(target), {
         headers: isDemo ? { "x-demo-mode": "1" } : {},
       });
-      if (res.ok) {
-        let data: Booking[] = await res.json();
-        // В демо-режиме подгружаем созданные в этой сессии заявки
-        if (isDemo && typeof window !== "undefined") {
-          try {
-            const stored = sessionStorage.getItem("anomayka_demo_bookings");
-            if (stored) {
-              const demoList: Booking[] = JSON.parse(stored);
-              const cleanTarget = targetPhone.replace(/\D/g, "");
-              const matched = demoList.filter((b) =>
-                (b.clientPhone || "").replace(/\D/g, "").includes(cleanTarget)
-              );
-              data = [...matched, ...data];
-            }
-          } catch (e) {}
-        }
-        setBookings(data);
-        setIsAuthenticated(true);
-      } else {
-        setErrorMsg("Не удалось найти записи по указанному номеру");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Не удалось загрузить записи");
       }
-    } catch (err) {
-      setErrorMsg("Ошибка связи с сервером");
+      let data: Booking[] = await res.json();
+
+      if (isDemo && typeof window !== "undefined") {
+        try {
+          const stored = sessionStorage.getItem("anomayka_demo_bookings");
+          if (stored) {
+            const clean = target.replace(/\D/g, "");
+            const demoList: Booking[] = JSON.parse(stored);
+            data = [...demoList.filter((b) => b.clientPhone.replace(/\D/g, "") === clean), ...data];
+          }
+        } catch (e) {}
+      }
+
+      setBookings(data);
+      setAuthPhone(target);
+    } catch (err: any) {
+      setError(err?.message || "Ошибка связи");
+      setBookings([]);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (initialPhone) {
-      fetchClientBookings(initialPhone);
-    }
+    if (initialPhone) load(initialPhone);
   }, [initialPhone]);
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!phone.trim()) return;
-    fetchClientBookings(phone.trim());
+  const cancel = async (booking: Booking) => {
+    if (!window.confirm("Отменить эту запись? Слот освободится для других клиентов.")) return;
+
+    const res = await fetch("/api/bookings/" + booking.id, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        ...(isDemo ? { "x-demo-mode": "1" } : {}),
+      },
+      body: JSON.stringify({ status: "cancelled", isDemo, phone: booking.clientPhone }),
+    });
+
+    if (res.ok) {
+      setBookings((prev) => prev.map((b) => (b.id === booking.id ? { ...b, status: "cancelled" } : b)));
+      setNotice("Запись отменена");
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setNotice(data.error || "Не удалось отменить запись");
+    }
   };
 
-  // Отмена записи
-  const handleCancelBooking = async (id: string) => {
-    if (!confirm("Вы уверены, что хотите отменить эту запись? Слот освободится для других автовладельцев.")) {
-      return;
-    }
+  const submitReschedule = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reschedule || !newDate || !newTime) return;
 
+    setSaving(true);
+    setNotice("");
     try {
-      const res = await fetch(`/api/bookings/${id}`, {
+      const res = await fetch("/api/bookings/" + reschedule.id, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           ...(isDemo ? { "x-demo-mode": "1" } : {}),
         },
-        body: JSON.stringify({ status: "cancelled", isDemo }),
+        body: JSON.stringify({ date: newDate, time: newTime, isDemo, phone: reschedule.clientPhone }),
       });
-
-      if (res.ok) {
-        setBookings((prev) =>
-          prev.map((b) => (b.id === id ? { ...b, status: "cancelled" } : b))
-        );
-      }
-    } catch (e) {
-      alert("Ошибка при отмене записи");
-    }
-  };
-
-  // Перенос записи
-  const handleRescheduleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!rescheduleBooking || !newDate || !newTime) return;
-
-    setIsRescheduling(true);
-    try {
-      const res = await fetch(`/api/bookings/${rescheduleBooking.id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          ...(isDemo ? { "x-demo-mode": "1" } : {}),
-        },
-        body: JSON.stringify({ date: newDate, time: newTime, isDemo }),
-      });
-
-      const result = await res.json();
-      if (!res.ok) {
-        throw new Error(result.error || "Выбранное время уже занято");
-      }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Это время уже занято");
 
       setBookings((prev) =>
-        prev.map((b) =>
-          b.id === rescheduleBooking.id ? { ...b, date: newDate, time: newTime } : b
-        )
+        prev.map((b) => (b.id === reschedule.id ? { ...b, date: newDate, time: newTime } : b))
       );
-      setRescheduleBooking(null);
-      alert("Запись успешно перенесена на новое время!");
+      setReschedule(null);
+      setNotice("Запись перенесена");
     } catch (err: any) {
-      alert(err.message || "Ошибка при переносе");
+      setNotice(err?.message || "Не удалось перенести запись");
     } finally {
-      setIsRescheduling(false);
+      setSaving(false);
     }
   };
 
-  // Разделение на активные и архивные
-  const activeBookings = bookings.filter(
-    (b) => b.status === "confirmed" || b.status === "new"
-  );
-  const pastBookings = bookings.filter(
-    (b) => b.status === "completed" || b.status === "cancelled" || b.status === "noshow"
-  );
+  const today = new Date().toISOString().slice(0, 10);
+  const active = bookings.filter((b) => b.status === "confirmed" || b.status === "new");
+  const past = bookings.filter((b) => b.status !== "confirmed" && b.status !== "new");
+  const isAuthed = Boolean(authPhone) && searched;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-10">
-      <div>
-        <span className="text-xs font-bold text-brand-accent uppercase tracking-wider block">
-          Личный кабинет
-        </span>
-        <h1 className="text-3xl font-black text-white tracking-tight">
-          Мои записи и управление визитами
+    <div className="page-shell pb-16 pt-10 sm:pt-14">
+      <div className="max-w-2xl">
+        <p className="eyebrow mb-3">Личный кабинет</p>
+        <h1 className="heading text-[clamp(2rem,4.4vw,3rem)] text-theme-title">
+          Мои записи
         </h1>
-        <p className="text-sm text-slate-400 mt-1">
-          Просматривайте статус, переносите дату визита или повторяйте запись в 2 клика без звонков
+        <p className="mt-3 text-[13px] leading-relaxed text-theme-muted">
+          Посмотрите статус визита, перенесите время или отмените запись. Нужен
+          только номер телефона, указанный при оформлении.
         </p>
       </div>
 
-      {!isAuthenticated ? (
-        <div className="max-w-md mx-auto p-8 rounded-3xl bg-brand-surface border border-white/10 shadow-2xl space-y-5">
-          <div className="w-12 h-12 rounded-2xl bg-brand-accent/15 border border-brand-accent/30 mx-auto flex items-center justify-center text-brand-accent">
-            <User className="w-6 h-6" />
-          </div>
-          <div className="text-center space-y-1">
-            <h2 className="text-lg font-bold text-white">Вход по номеру телефона</h2>
-            <p className="text-xs text-slate-400">
-              Введите телефон, указанный при оформлении любой записи
-            </p>
-          </div>
+      {!isAuthed ? (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (phone.replace(/\D/g, "").length >= 10) load(phone);
+            else setError("Укажите полный номер телефона");
+          }}
+          className="mt-8 max-w-md rounded-2xl border border-brand-border bg-brand-surface p-6"
+        >
+          <p className="text-[14px] font-semibold text-theme-title">Вход по номеру телефона</p>
+          <p className="mt-1 text-[12px] text-theme-muted">
+            Найдём все записи, оформленные на этот номер.
+          </p>
 
-          {errorMsg && (
-            <div className="p-3 rounded-xl bg-red-950/40 border border-red-500/40 text-red-300 text-xs">
-              {errorMsg}
-            </div>
-          )}
-
-          <form onSubmit={handleLogin} className="space-y-4">
+          <div className="mt-5 space-y-3">
             <Input
-              label="Номер телефона"
+              label="Телефон"
               type="tel"
               placeholder="+7 (999) 000-00-00"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              required
+              autoComplete="tel"
             />
-            <Button type="submit" size="lg" isLoading={isLoading} className="w-full">
-              Найти мои записи
+            {error && <p className="text-[12px] text-red-400">{error}</p>}
+            <Button type="submit" isLoading={loading} className="h-11 w-full text-[13px]">
+              Найти записи
             </Button>
-          </form>
-        </div>
+          </div>
+        </form>
       ) : (
-        <div className="space-y-8">
-          {/* Инфо профиля */}
-          <div className="p-5 rounded-2xl bg-brand-surface border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-full bg-brand-accent/15 border border-brand-accent/30 flex items-center justify-center text-brand-accent">
-                <User className="w-5 h-5" />
-              </div>
-              <div>
-                <strong className="text-white block text-sm">{phone}</strong>
-                <span className="text-xs text-slate-400">
-                  Всего записей в сервисе: {bookings.length}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
+        <div className="mt-8 space-y-8">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-y border-brand-border py-4">
+            <p className="text-[13px] text-theme-muted">
+              Номер: <span className="font-medium text-theme-title">{authPhone}</span>
+            </p>
+            <div className="flex items-center gap-2">
               <button
-                onClick={() => fetchClientBookings(phone)}
-                className="p-2 rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:text-white transition-colors"
-                title="Обновить список"
+                type="button"
+                onClick={() => load(authPhone)}
+                className="inline-flex h-9 items-center gap-1.5 rounded-full border border-brand-border px-3 text-[12px] text-theme-muted transition-colors hover:text-theme-title"
               >
-                <RefreshCw className="w-4 h-4" />
+                <RefreshCw className="h-3.5 w-3.5" />
+                Обновить
               </button>
               <button
+                type="button"
                 onClick={() => {
-                  setIsAuthenticated(false);
-                  setPhone("");
+                  setAuthPhone("");
                   setBookings([]);
+                  setPhone("");
+                  setSearched(false);
                 }}
-                className="text-xs text-slate-400 hover:text-white underline underline-offset-4"
+                className="inline-flex h-9 items-center rounded-full border border-brand-border px-3 text-[12px] text-theme-muted transition-colors hover:text-theme-title"
               >
                 Сменить номер
               </button>
             </div>
           </div>
 
-          {/* Активные записи */}
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-brand-accent" />
-              Предстоящие записи ({activeBookings.length})
+          {notice && (
+            <div className="rounded-xl border border-brand-border bg-brand-surface px-4 py-3 text-[12px] text-theme-title">
+              {notice}
+            </div>
+          )}
+
+          <section className="space-y-3">
+            <h2 className="text-[15px] font-semibold text-theme-title">
+              Предстоящие визиты
+              <span className="ml-2 text-theme-muted">({active.length})</span>
             </h2>
 
-            {activeBookings.length === 0 ? (
-              <div className="p-8 rounded-2xl bg-brand-surface border border-white/5 text-center space-y-3">
-                <p className="text-xs text-slate-400">
-                  У вас пока нет активных предстоящих записей.
+            {active.length === 0 ? (
+              <div className="rounded-2xl border border-brand-border bg-brand-surface px-6 py-8 text-center">
+                <Car className="mx-auto h-6 w-6 text-theme-muted" />
+                <p className="mt-3 text-[13px] text-theme-title">Активных записей нет</p>
+                <p className="mt-1 text-[12px] text-theme-muted">
+                  Выберите услугу и удобное время — это займёт пару минут.
                 </p>
-                <Link href={getDemoHref("/booking")}>
-                  <Button size="sm">Записаться на обслуживание</Button>
+                <Link
+                  href={getDemoHref("/booking")}
+                  className="mt-4 inline-flex h-10 items-center gap-1.5 rounded-full bg-brand-accent px-4 text-[12px] font-semibold text-white"
+                >
+                  Записаться
+                  <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
             ) : (
-              <div className="space-y-3">
-                {activeBookings.map((b) => (
-                  <div
-                    key={b.id}
-                    className="p-5 rounded-2xl bg-brand-surface border border-white/10 space-y-4 shadow-lg hover:border-brand-accent/30 transition-all"
-                  >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-3">
-                      <div className="flex items-center gap-3">
-                        <span className="font-mono text-xs font-bold text-brand-accent bg-brand-accent/10 border border-brand-accent/20 px-2.5 py-1 rounded-lg">
-                          {b.code}
-                        </span>
-                        <div className="flex items-center gap-2 text-xs text-white font-semibold">
-                          <Calendar className="w-3.5 h-3.5 text-brand-accent" />
-                          <span>{formatDateRu(b.date)}</span>
-                          <span className="text-brand-accent font-bold ml-1">{b.time}</span>
-                          <span className="text-slate-400 text-[11px]">({formatDuration(b.durationMinutes)})</span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        <span className="font-black text-white text-base">
-                          {formatPrice(b.price)}
-                        </span>
-                        <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                          Подтверждено
-                        </span>
-                      </div>
+              active.map((b) => (
+                <article key={b.id} className="rounded-2xl border border-brand-border bg-brand-surface p-5">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="text-[14px] font-semibold text-theme-title">{b.serviceTitle}</p>
+                      <p className="mt-1 text-[12px] text-theme-muted">
+                        {formatDateRu(b.date)} · {b.time} · {formatDuration(b.durationMinutes)}
+                      </p>
                     </div>
+                    <span className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold text-emerald-600">
+                      Подтверждено
+                    </span>
+                  </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                      <div>
-                        <span className="text-slate-400 block text-[11px]">Услуга:</span>
-                        <strong className="text-white text-sm block">{b.serviceTitle}</strong>
-                      </div>
-                      <div>
-                        <span className="text-slate-400 block text-[11px]">Автомобиль:</span>
-                        <span className="text-slate-200">{b.carModel || "Не указан"}</span>
-                      </div>
-                    </div>
-
-                    <div className="pt-3 border-t border-white/5 flex flex-wrap items-center justify-between gap-2">
-                      <span className="text-[11px] text-slate-500">
-                        Оплата в кассе автоцентра после завершения работ
-                      </span>
-
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => {
-                            setRescheduleBooking(b);
-                            setNewDate(b.date);
-                            setNewTime(b.time);
-                          }}
-                          className="h-8 px-3 text-xs"
-                        >
-                          Перенести время
-                        </Button>
-
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleCancelBooking(b.id)}
-                          className="h-8 px-2 text-xs text-slate-400 hover:text-red-400"
-                        >
-                          <Ban className="w-3.5 h-3.5 mr-1" /> Отменить
-                        </Button>
-                      </div>
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-brand-border pt-4 text-[12px]">
+                    <span className="font-mono text-brand-accent">{b.code}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-theme-muted">{formatPrice(b.price)}</span>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          setReschedule(b);
+                          setNewDate(b.date);
+                          setNewTime(b.time);
+                          setNotice("");
+                        }}
+                        className="h-8 text-[11px]"
+                      >
+                        Перенести
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => cancel(b)}
+                        className="h-8 text-[11px] text-theme-muted hover:text-red-400"
+                      >
+                        Отменить
+                      </Button>
                     </div>
                   </div>
-                ))}
-              </div>
+                </article>
+              ))
             )}
-          </div>
+          </section>
 
-          {/* История завершенных записей */}
-          {pastBookings.length > 0 && (
-            <div className="space-y-4 pt-6">
-              <h2 className="text-lg font-bold text-slate-300">
-                История визитов ({pastBookings.length})
-              </h2>
-
-              <div className="space-y-2">
-                {pastBookings.map((b) => (
-                  <div
-                    key={b.id}
-                    className="p-4 rounded-xl bg-white/[0.02] border border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs opacity-75"
-                  >
+          {past.length > 0 && (
+            <section className="space-y-3 border-t border-brand-border pt-6">
+              <h2 className="text-[15px] font-semibold text-theme-title">История</h2>
+              <div className="divide-y divide-brand-border rounded-2xl border border-brand-border bg-brand-surface">
+                {past.map((b) => (
+                  <div key={b.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5">
                     <div>
-                      <span className="font-mono text-slate-400 mr-2">{b.code}</span>
-                      <strong className="text-white">{b.serviceTitle}</strong>
-                      <span className="text-slate-400 block sm:inline sm:ml-2">
-                        {formatDateRu(b.date)} в {b.time}
-                      </span>
+                      <p className="text-[13px] font-medium text-theme-title">{b.serviceTitle}</p>
+                      <p className="mt-0.5 text-[11px] text-theme-muted">
+                        {formatDateRu(b.date)} · {b.time} · {b.code}
+                      </p>
                     </div>
-
-                    <div className="flex flex-wrap items-center gap-2.5">
-                      <span className="font-semibold text-white">{formatPrice(b.price)}</span>
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] uppercase font-semibold bg-white/5 text-slate-400">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] text-theme-muted">
                         {b.status === "completed" ? "Выполнено" : b.status === "cancelled" ? "Отменено" : "Неявка"}
                       </span>
-
-                      {/* Кнопка оставить отзыв для выполненных работ */}
-                      {b.status === "completed" && (
-                        b.hasReview ? (
-                          <span className="px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
-                            <Check className="w-3 h-3" /> Отзыв сохранен
-                          </span>
-                        ) : (
-                          <Button
-                            size="sm"
-                            onClick={() => {
-                              setReviewBooking(b);
-                              setRating(5);
-                              setReviewText("");
-                              setReviewError("");
-                              setReviewSuccess(false);
-                            }}
-                            className="h-8 px-3 text-xs font-bold bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-500/40 rounded-xl flex items-center gap-1.5 cursor-pointer shadow-sm"
-                          >
-                            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                            <span>Оставить отзыв</span>
-                          </Button>
-                        )
-                      )}
-
-                      <Link href={getDemoHref(`/booking?serviceId=${b.serviceId}`)}>
-                        <Button variant="secondary" size="sm" className="h-8 px-3 text-xs rounded-xl">
-                          Записаться снова
-                        </Button>
+                      <Link
+                        href={getDemoHref("/booking?serviceId=" + b.serviceId)}
+                        className="inline-flex h-8 items-center rounded-full border border-brand-border px-3 text-[11px] text-theme-title"
+                      >
+                        Повторить
                       </Link>
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
+            </section>
           )}
+
+          <section className="space-y-3 border-t border-brand-border pt-6">
+            <h2 className="text-[15px] font-semibold text-theme-title">Оставить отзыв</h2>
+            <ReviewForm phone={authPhone} isDemo={isDemo} />
+          </section>
         </div>
       )}
 
-      {/* Модальное окно переноса записи */}
-      {rescheduleBooking && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-sm bg-brand-surface border border-white/15 rounded-2xl p-6 space-y-4 shadow-2xl">
-            <h3 className="text-base font-bold text-white">Перенос записи {rescheduleBooking.code}</h3>
-            <p className="text-xs text-slate-400">
-              Услуга: <strong>{rescheduleBooking.serviceTitle}</strong> ({rescheduleBooking.durationMinutes} мин)
-            </p>
+      {reschedule && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+          onClick={() => setReschedule(null)}
+        >
+          <form
+            onSubmit={submitReschedule}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-sm rounded-2xl border border-brand-border bg-brand-surface p-6"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[15px] font-semibold text-theme-title">Перенос записи</p>
+                <p className="mt-1 text-[12px] text-theme-muted">{reschedule.serviceTitle}</p>
+              </div>
+              <button type="button" onClick={() => setReschedule(null)} aria-label="Закрыть">
+                <X className="h-4 w-4 text-theme-muted" />
+              </button>
+            </div>
 
-            <form onSubmit={handleRescheduleSubmit} className="space-y-3 text-xs">
+            <div className="mt-5 space-y-3">
               <Input
                 label="Новая дата"
                 type="date"
+                min={today}
                 value={newDate}
                 onChange={(e) => setNewDate(e.target.value)}
-                required
               />
-
               <Input
-                label="Новое время начала"
-                type="text"
-                placeholder="15:00"
+                label="Новое время"
+                type="time"
                 value={newTime}
                 onChange={(e) => setNewTime(e.target.value)}
-                required
               />
+            </div>
 
-              <div className="pt-2 flex justify-end gap-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setRescheduleBooking(null)}
-                >
-                  Отмена
-                </Button>
-                <Button type="submit" size="sm" isLoading={isRescheduling}>
-                  Подтвердить перенос
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Модальное окно отзыва о визите */}
-      {reviewBooking && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
-          <div className="w-full max-w-md bg-brand-surface border border-white/15 rounded-3xl p-6 sm:p-7 space-y-4 shadow-2xl relative">
-            <button
-              onClick={() => setReviewBooking(null)}
-              className="absolute top-4 right-4 p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            {reviewSuccess ? (
-              <div className="py-8 text-center space-y-3 animate-in zoom-in-95">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 mx-auto flex items-center justify-center">
-                  <Check className="w-6 h-6" />
-                </div>
-                <h3 className="text-lg font-bold text-white">Спасибо за ваш отзыв!</h3>
-                <p className="text-xs text-slate-300">
-                  Ваш отзыв успешно сохранен и опубликован на сайте автоцентра.
-                </p>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmitReview} className="space-y-4">
-                <div className="space-y-1">
-                  <h3 className="text-lg font-bold text-white">Оставить отзыв о визите</h3>
-                  <p className="text-xs text-slate-400">
-                    Услуга: <strong className="text-white">{reviewBooking.serviceTitle}</strong>
-                  </p>
-                </div>
-
-                {reviewError && (
-                  <div className="p-3 rounded-xl bg-red-950/40 border border-red-500/40 text-red-300 text-xs flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4 shrink-0" />
-                    <span>{reviewError}</span>
-                  </div>
-                )}
-
-                {/* Выбор рейтинга звездами */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-300 block">Ваша оценка:</label>
-                  <div className="flex items-center gap-2">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        type="button"
-                        onClick={() => setRating(star)}
-                        className="p-1 hover:scale-110 transition-transform cursor-pointer"
-                      >
-                        <Star
-                          className={`w-7 h-7 ${
-                            star <= rating
-                              ? "fill-amber-400 text-amber-400"
-                              : "text-slate-600 hover:text-slate-400"
-                          }`}
-                        />
-                      </button>
-                    ))}
-                    <span className="text-xs font-bold text-amber-400 ml-2">
-                      {rating === 5 ? "Отлично" : rating === 4 ? "Хорошо" : rating === 3 ? "Нормально" : "Есть замечания"}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Поле отзыва */}
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-slate-300 block">
-                    Поделитесь впечатлениями о сервисе и мастере:
-                  </label>
-                  <textarea
-                    rows={4}
-                    placeholder="Например: быстро приняли авто, сделали ТО за 40 минут, чистая зона ожидания..."
-                    value={reviewText}
-                    onChange={(e) => setReviewText(e.target.value)}
-                    required
-                    className="w-full rounded-2xl bg-black/40 border border-white/10 p-3.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-brand-accent resize-none"
-                  />
-                </div>
-
-                <div className="pt-2 flex justify-end gap-2">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setReviewBooking(null)}
-                  >
-                    Отмена
-                  </Button>
-                  <Button
-                    type="submit"
-                    size="lg"
-                    isLoading={isSubmittingReview}
-                    className="font-bold rounded-2xl px-6 shadow-xl shadow-brand-accent/25"
-                  >
-                    Опубликовать отзыв
-                  </Button>
-                </div>
-              </form>
-            )}
-          </div>
+            <Button type="submit" isLoading={saving} className="mt-4 h-11 w-full text-[12px]">
+              Подтвердить перенос
+            </Button>
+          </form>
         </div>
       )}
     </div>
   );
 }
 
+function ReviewForm({ phone, isDemo }: { phone: string; isDemo: boolean }) {
+  const [text, setText] = useState("");
+  const [rating, setRating] = useState(5);
+  const [sent, setSent] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const send = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!text.trim()) return;
+    setBusy(true);
+    try {
+      const res = await fetch("/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...(isDemo ? { "x-demo-mode": "1" } : {}) },
+        body: JSON.stringify({ author: "Клиент", car: "", service: "Визит в сервис", rating, text, isDemo }),
+      });
+      if (res.ok) {
+        setSent(true);
+        setText("");
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (sent) {
+    return (
+      <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.07] px-5 py-4 text-[12px] text-theme-title">
+        Спасибо! Отзыв опубликован.
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={send} className="rounded-2xl border border-brand-border bg-brand-surface p-5">
+      <div className="flex items-center gap-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button
+            key={star}
+            type="button"
+            onClick={() => setRating(star)}
+            className="p-0.5"
+            aria-label={"Оценка " + star}
+          >
+            <Star
+              className={
+                "h-4 w-4 " + (star <= rating ? "fill-amber-400 text-amber-600" : "text-theme-muted")
+              }
+            />
+          </button>
+        ))}
+      </div>
+      <textarea
+        rows={3}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder="Как прошёл визит?"
+        className="mt-3 w-full resize-none rounded-xl border border-brand-border bg-[var(--brand-secondary)] px-4 py-3 text-[13px] text-theme-title placeholder:text-theme-muted/60 focus:border-brand-accent focus:outline-none"
+      />
+      <Button type="submit" isLoading={busy} disabled={!text.trim()} className="mt-3 h-9 px-4 text-[12px]">
+        <Check className="h-3.5 w-3.5" />
+        Оставить отзыв
+      </Button>
+      <p className="mt-2 text-[10px] text-theme-muted">Отзыв от клиента с номером {phone}</p>
+    </form>
+  );
+}
+
 export default function AccountPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-[60vh] flex items-center justify-center text-slate-400">
-          Загрузка личного кабинета...
-        </div>
-      }
-    >
+    <Suspense fallback={<div className="page-shell py-20 text-[13px] text-theme-muted">Загрузка…</div>}>
       <AccountContent />
     </Suspense>
   );
 }
+

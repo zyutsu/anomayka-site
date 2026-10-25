@@ -2,79 +2,148 @@
 
 import React from "react";
 import Link from "next/link";
-import { Phone, Calendar } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ArrowUpRight, CalendarCheck, Clock3, MapPin, ShieldCheck, Sparkles } from "lucide-react";
 import { useBrand } from "@/context/BrandContext";
 import { BrandSettings } from "@/lib/types";
+import { BrandMark } from "@/components/BrandMark";
 
 export function HeroSection({ initialBrand }: { initialBrand: BrandSettings }) {
   const brandContext = useBrand();
   const brand = brandContext?.brand || initialBrand;
   const getDemoHref = brandContext?.getDemoHref || ((p: string) => p);
 
-  return (
-    <section className="relative pt-6 pb-12 sm:pt-12 sm:pb-20">
-      {/* Мягкое бесшовное атмосферное свечение */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_45%_at_50%_35%,rgba(var(--brand-accent-rgb),0.12)_0%,rgba(var(--brand-accent-rgb),0.03)_40%,transparent_65%)] pointer-events-none" />
+  const mapHref =
+    brand.mapUrl || "https://yandex.ru/maps/?text=" + encodeURIComponent(brand.address);
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 relative z-10 text-center space-y-6">
-        {/* Фирменный логотип */}
-        {brand.logoUrl && (
-          <div className="flex justify-center">
-            <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-3xl overflow-hidden border border-brand-border bg-black/60 shadow-2xl flex items-center justify-center transition-all hover:scale-[1.03]">
-              <img
-                src={brand.logoUrl}
-                alt={brand.name}
-                className="w-full h-full object-cover"
-              />
+  return (
+    <section className="relative overflow-hidden">
+      <div className="absolute inset-0 grid-texture opacity-70" aria-hidden="true" />
+      <div className="absolute -right-40 -top-56 h-[560px] w-[560px] rounded-full glow-accent blur-2xl" aria-hidden="true" />
+
+      <div className="page-shell relative">
+        <div className="grid items-end gap-12 pb-14 pt-12 md:grid-cols-[1.25fr_0.75fr] md:gap-16 md:pb-20 md:pt-20">
+          <div className="animate-rise">
+            <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-brand-border bg-[var(--brand-surface)]/70 px-3 py-1.5 text-[11px] font-medium text-theme-muted backdrop-blur">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              </span>
+              Свободные окна на сегодня · запись открыта
+            </div>
+
+            <h1 className="display text-[clamp(2.9rem,7vw,5.4rem)] text-theme-title">
+              Запись в сервис
+              <br />
+              <span className="text-brand-accent">за две минуты.</span>
+            </h1>
+
+            <p className="mt-6 max-w-xl text-[15px] leading-relaxed text-theme-muted sm:text-base">
+              {brand.name} — {brand.city}. Выберите услугу, удобное время и оставьте
+              контакты. Мастер будет ждать вас в назначенный час, без звонков и
+              очередей.
+            </p>
+
+            <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Link
+                href={getDemoHref("/booking")}
+                className="group inline-flex h-14 items-center justify-center gap-2.5 rounded-full bg-brand-accent px-7 text-[15px] font-semibold text-white shadow-[0_18px_40px_-16px_rgba(var(--brand-accent-rgb),0.9)] transition-all hover:bg-brand-accentHover hover:shadow-[0_22px_48px_-16px_rgba(var(--brand-accent-rgb),0.95)]"
+              >
+                <CalendarCheck className="h-5 w-5" />
+                Выбрать время визита
+                <ArrowUpRight className="h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+              </Link>
+              <Link
+                href={getDemoHref("/services")}
+                className="inline-flex h-14 items-center justify-center gap-2 rounded-full border border-brand-border px-6 text-[15px] font-medium text-theme-title transition-colors hover:border-brand-accent/60"
+              >
+                Услуги и цены
+              </Link>
+            </div>
+
+            <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-3 text-[12px] text-theme-muted">
+              <span className="inline-flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-brand-accent" />
+                Бронь без предоплаты
+              </span>
+              <span className="inline-flex items-center gap-2">
+                <Clock3 className="h-4 w-4 text-brand-accent" />
+                Подтверждение сразу
+              </span>
+              <a
+                href={mapHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 transition-colors hover:text-theme-title"
+              >
+                <MapPin className="h-4 w-4 text-brand-accent" />
+                {brand.city}
+              </a>
             </div>
           </div>
-        )}
 
-        {/* Заголовок и номер телефона прямо под именем салона */}
-        <div className="space-y-3 max-w-2xl mx-auto">
-          <h1 className="text-3xl sm:text-6xl font-black text-theme-title tracking-tight leading-none">
-            {brand.name}
-          </h1>
+          <div className="relative animate-rise [animation-delay:120ms]">
+            <div className="surface overflow-hidden rounded-[26px]">
+              <div className="flex items-center justify-between border-b border-brand-border px-5 py-4">
+                <span className="mono-label">Визит · детали</span>
+                <Sparkles className="h-4 w-4 text-brand-accent" />
+              </div>
 
-          {/* Номер телефона прямо под именем салона */}
-          <div className="flex justify-center">
-            <a
-              href={`tel:${brand.phoneRaw || brand.phone}`}
-              className="inline-flex items-center gap-2.5 px-5 py-2 rounded-2xl bg-brand-surface border border-brand-border text-base sm:text-lg font-bold text-brand-accent hover:border-brand-accent transition-all hover:scale-105 shadow-md"
-            >
-              <Phone className="w-4 h-4 text-brand-accent shrink-0" />
-              <span>{brand.phone}</span>
-            </a>
-          </div>
+              <div className="space-y-5 p-5">
+                <div className="flex items-center gap-3.5">
+                  <BrandMark
+                    name={brand.name}
+                    logoUrl={brand.logoUrl}
+                    accentColor={brand.accentColor}
+                    className="h-14 w-14 shrink-0 rounded-2xl border border-brand-border bg-[var(--brand-secondary)] p-1.5"
+                  />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-bold text-theme-title">{brand.name}</p>
+                    <p className="truncate text-[11px] text-theme-muted">{brand.address}</p>
+                  </div>
+                </div>
 
-          <p className="text-xs sm:text-sm text-theme-muted font-medium">
-            {brand.city} • {brand.address}
-          </p>
-        </div>
+                <div className="hairline" />
 
-        {/* Большая заметная кнопка онлайн-записи с мягкой подсветкой */}
-        <div className="flex justify-center pt-2">
-          <div className="relative inline-flex items-center justify-center w-full sm:w-auto">
-            <div
-              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] sm:w-[380px] h-[90px] rounded-full pointer-events-none"
-              style={{
-                background:
-                  "radial-gradient(ellipse at center, rgba(var(--brand-accent-rgb), 0.35) 0%, rgba(var(--brand-accent-rgb), 0.12) 35%, rgba(var(--brand-accent-rgb), 0) 68%)",
-              }}
-            />
-            <Link href={getDemoHref("/booking")} className="relative z-10 w-full sm:w-auto">
-              <Button
-                size="lg"
-                className="w-full sm:w-auto h-16 px-10 rounded-2xl text-lg sm:text-xl font-black shadow-xl shadow-brand-accent/25 hover:scale-[1.03] transition-all flex items-center justify-center gap-3 cursor-pointer"
-              >
-                <Calendar className="w-6 h-6" />
-                <span>Записаться онлайн</span>
-              </Button>
-            </Link>
+                <dl className="space-y-3 text-[12px]">
+                  <div className="flex items-center justify-between gap-4">
+                    <dt className="text-theme-muted">Услуга</dt>
+                    <dd className="text-right font-medium text-theme-title">
+                      ТО и диагностика
+                    </dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <dt className="text-theme-muted">Длительность</dt>
+                    <dd className="font-medium text-theme-title">45 минут</dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <dt className="text-theme-muted">Стоимость</dt>
+                    <dd className="font-semibold text-theme-title">от 2 500 ₽</dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <dt className="text-theme-muted">График</dt>
+                    <dd className="text-right font-medium text-theme-title">{brand.workHours}</dd>
+                  </div>
+                </dl>
+
+                <div className="rounded-2xl border border-brand-accent/25 bg-brand-accent/[0.08] px-4 py-3">
+                  <p className="text-[11px] leading-relaxed text-theme-title">
+                    Свободные окна рассчитываются по длительности услуги — пересечений
+                    и накладок не будет.
+                  </p>
+                </div>
+
+                <Link
+                  href={getDemoHref("/booking")}
+                  className="flex h-11 items-center justify-center rounded-full bg-[var(--brand-secondary)] text-[13px] font-semibold text-theme-title transition-colors hover:bg-brand-accent hover:text-white"
+                >
+                  Проверить свободное время
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </section>
   );
 }
+

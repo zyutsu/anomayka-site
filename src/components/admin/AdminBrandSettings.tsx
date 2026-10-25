@@ -85,17 +85,17 @@ export function AdminBrandSettings({ brand, onSaveBrand }: AdminBrandSettingsPro
     <div className="space-y-6 max-w-4xl">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+          <h2 className="text-xl font-bold text-theme-title tracking-tight flex items-center gap-2">
             <Palette className="w-5 h-5 text-brand-accent" />
             Настройки бренда (White-Label)
           </h2>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-theme-muted mt-1">
             Перекрашивайте, переименовывайте и настраивайте автоцентр под любого владельца без правки кода
           </p>
         </div>
 
         {savedSuccess && (
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-semibold animate-in fade-in">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 text-xs font-semibold animate-in fade-in">
             <Check className="w-4 h-4" /> Настройки сохранены!
           </div>
         )}
@@ -103,8 +103,8 @@ export function AdminBrandSettings({ brand, onSaveBrand }: AdminBrandSettingsPro
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Блок 1: Основные реквизиты */}
-        <div className="p-6 rounded-2xl bg-brand-surface border border-white/10 space-y-4">
-          <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+        <div className="p-6 rounded-2xl bg-brand-surface border border-brand-border space-y-4">
+          <h3 className="text-sm font-bold text-theme-title uppercase tracking-wider flex items-center gap-2">
             <Globe className="w-4 h-4 text-brand-accent" />
             Идентификация и бренд
           </h3>
@@ -132,10 +132,10 @@ export function AdminBrandSettings({ brand, onSaveBrand }: AdminBrandSettingsPro
 
           <div className="space-y-3 pt-2">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <label className="text-xs font-semibold text-slate-300">
+              <label className="text-xs font-semibold text-theme-title">
                 Логотип автоцентра
               </label>
-              <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-white text-xs font-medium cursor-pointer border border-white/10 transition-colors">
+              <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--brand-secondary)] hover:bg-brand-accent/10 text-theme-title text-xs font-medium cursor-pointer border border-brand-border transition-colors">
                 <Upload className="w-3.5 h-3.5 text-brand-accent" />
                 {isUploadingLogo ? "Загрузка на сервер..." : "Выбрать файл логотипа с устройства"}
                 <input
@@ -155,8 +155,8 @@ export function AdminBrandSettings({ brand, onSaveBrand }: AdminBrandSettingsPro
                 onChange={(e) => setForm({ ...form, logoUrl: e.target.value })}
               />
               <div className="flex items-center gap-3 pt-1 sm:pt-5">
-                <span className="text-xs text-slate-400">Превью:</span>
-                <div className="w-14 h-14 rounded-2xl border border-white/15 bg-black/80 overflow-hidden flex items-center justify-center p-1.5 shadow-inner">
+                <span className="text-xs text-theme-muted">Превью:</span>
+                <div className="w-14 h-14 rounded-2xl border border-brand-border bg-[var(--brand-secondary)] overflow-hidden flex items-center justify-center p-1.5 shadow-inner">
                   {form.logoUrl ? (
                     <img src={form.logoUrl} alt="Logo" className="w-full h-full object-contain rounded-xl" />
                   ) : (
@@ -169,21 +169,21 @@ export function AdminBrandSettings({ brand, onSaveBrand }: AdminBrandSettingsPro
         </div>
 
         {/* Блок 2: Цветовая палитра White-Label */}
-        <div className="p-6 rounded-2xl bg-brand-surface border border-white/10 space-y-4">
+        <div className="p-6 rounded-2xl bg-brand-surface border border-brand-border space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <h3 className="text-sm font-bold text-theme-title uppercase tracking-wider flex items-center gap-2">
                 <Palette className="w-4 h-4 text-brand-accent" />
                 Цветовая схема сайта
               </h3>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-xs text-theme-muted mt-0.5">
                 Изменение цветов динамически перекрашивает кнопки, подсветки, карточки и элементы сайта
               </p>
             </div>
             <button
               type="button"
               onClick={handleResetColors}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-slate-300 hover:text-white border border-white/10 transition-colors cursor-pointer shrink-0"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--brand-secondary)] hover:bg-brand-accent/10 text-xs font-semibold text-theme-title hover:text-theme-title border border-brand-border transition-colors cursor-pointer shrink-0"
             >
               <RotateCcw className="w-3.5 h-3.5 text-brand-accent" />
               Вернуть по умолчанию
@@ -193,7 +193,7 @@ export function AdminBrandSettings({ brand, onSaveBrand }: AdminBrandSettingsPro
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-slate-300">
+              <label className="block text-xs font-medium text-theme-title">
                 Акцентный цвет (Кнопки, CTA)
               </label>
               <div className="flex items-center gap-2">
@@ -207,13 +207,13 @@ export function AdminBrandSettings({ brand, onSaveBrand }: AdminBrandSettingsPro
                   type="text"
                   value={form.accentColor}
                   onChange={(e) => setForm({ ...form, accentColor: e.target.value })}
-                  className="flex-1 h-10 px-3 rounded-xl bg-black/40 border border-white/10 text-xs text-white font-mono"
+                  className="flex-1 h-10 px-3 rounded-xl bg-[var(--brand-secondary)] border border-brand-border text-xs text-theme-title font-mono"
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-slate-300">
+              <label className="block text-xs font-medium text-theme-title">
                 Основной фон (Холст)
               </label>
               <div className="flex items-center gap-2">
@@ -227,13 +227,13 @@ export function AdminBrandSettings({ brand, onSaveBrand }: AdminBrandSettingsPro
                   type="text"
                   value={form.primaryColor}
                   onChange={(e) => setForm({ ...form, primaryColor: e.target.value })}
-                  className="flex-1 h-10 px-3 rounded-xl bg-black/40 border border-white/10 text-xs text-white font-mono"
+                  className="flex-1 h-10 px-3 rounded-xl bg-[var(--brand-secondary)] border border-brand-border text-xs text-theme-title font-mono"
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-slate-300">
+              <label className="block text-xs font-medium text-theme-title">
                 Вторичный оттенок (Карточки)
               </label>
               <div className="flex items-center gap-2">
@@ -247,7 +247,7 @@ export function AdminBrandSettings({ brand, onSaveBrand }: AdminBrandSettingsPro
                   type="text"
                   value={form.secondaryColor}
                   onChange={(e) => setForm({ ...form, secondaryColor: e.target.value })}
-                  className="flex-1 h-10 px-3 rounded-xl bg-black/40 border border-white/10 text-xs text-white font-mono"
+                  className="flex-1 h-10 px-3 rounded-xl bg-[var(--brand-secondary)] border border-brand-border text-xs text-theme-title font-mono"
                 />
               </div>
             </div>
@@ -255,8 +255,8 @@ export function AdminBrandSettings({ brand, onSaveBrand }: AdminBrandSettingsPro
         </div>
 
         {/* Блок 3: Контакты и мессенджеры */}
-        <div className="p-6 rounded-2xl bg-brand-surface border border-white/10 space-y-4">
-          <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+        <div className="p-6 rounded-2xl bg-brand-surface border border-brand-border space-y-4">
+          <h3 className="text-sm font-bold text-theme-title uppercase tracking-wider flex items-center gap-2">
             <Phone className="w-4 h-4 text-brand-accent" />
             Контакты и адрес
           </h3>

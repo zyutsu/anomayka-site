@@ -43,7 +43,7 @@ export default function AdminPage() {
   const [passwordStatus, setPasswordStatus] = useState<{ ok: boolean; msg: string } | null>(null);
   const [isChangingPass, setIsChangingPass] = useState(false);
 
-  // Проверка сохраненной авторизации при загрузке страницы (HttpOnly Cookie + fallback)
+  // Проверка защищённой серверной сессии при загрузке страницы
   useEffect(() => {
     const verifySession = async () => {
       try {
@@ -54,25 +54,10 @@ export default function AdminPage() {
             setAdminUser(data.user);
             setIsAuthenticated(true);
             fetchAllData();
-            return;
           }
         }
       } catch (e) {
-        // Fallback на sessionStorage
-      }
-
-      try {
-        const saved = sessionStorage.getItem("anomayka_admin_auth");
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (parsed && parsed.email) {
-            setAdminUser(parsed);
-            setIsAuthenticated(true);
-            fetchAllData();
-          }
-        }
-      } catch (e) {
-        // Игнорируем ошибку чтения сессии
+        // Сессии нет — показываем форму входа
       }
     };
 
@@ -97,8 +82,18 @@ export default function AdminPage() {
         fetch("/api/brand", { headers: demoHeaders }),
       ]);
 
-      if (bRes.ok && sRes.ok && cRes.ok && brRes.ok) {
-        let loadedBookings: Booking[] = await bRes.json();
+      // Журнал клиентов в демо-песочнице никогда не берём с сервера.
+      let loadedBookings: Booking[] = [];
+      if (isDemo) {
+        try {
+          const demoBooks = sessionStorage.getItem("anomayka_demo_bookings");
+          if (demoBooks) loadedBookings = JSON.parse(demoBooks);
+        } catch (e) {}
+      } else if (bRes.ok) {
+        loadedBookings = await bRes.json();
+      }
+
+      if (sRes.ok && cRes.ok && brRes.ok) {
         let loadedServices: Service[] = await sRes.json();
         let loadedCategories: Category[] = await cRes.json();
         const serverBrand = await brRes.json();
@@ -112,8 +107,6 @@ export default function AdminPage() {
             const demoSrvs = sessionStorage.getItem("anomayka_demo_services");
             if (demoSrvs) loadedServices = JSON.parse(demoSrvs);
 
-            const demoBooks = sessionStorage.getItem("anomayka_demo_bookings");
-            if (demoBooks) loadedBookings = [...JSON.parse(demoBooks), ...loadedBookings];
           } catch (e) {}
         }
 
@@ -156,7 +149,6 @@ export default function AdminPage() {
 
       setAdminUser(data.user);
       setIsAuthenticated(true);
-      sessionStorage.setItem("anomayka_admin_auth", JSON.stringify(data.user));
       await fetchAllData();
     } catch (err: any) {
       setLoginError(err.message || "Ошибка входа");
@@ -171,7 +163,6 @@ export default function AdminPage() {
     } catch (e) {
       // Игнорируем
     }
-    sessionStorage.removeItem("anomayka_admin_auth");
     setIsAuthenticated(false);
     setAdminUser(null);
     setPassword("");
@@ -184,8 +175,8 @@ export default function AdminPage() {
       setPasswordStatus({ ok: false, msg: "Новые пароли не совпадают" });
       return;
     }
-    if (newPassword.length < 6) {
-      setPasswordStatus({ ok: false, msg: "Новый пароль должен быть от 6 символов" });
+    if (newPassword.length < 8) {
+      setPasswordStatus({ ok: false, msg: "Новый пароль должен быть от 8 символов" });
       return;
     }
 
@@ -206,7 +197,7 @@ export default function AdminPage() {
         throw new Error(data.error || "Ошибка обновления пароля");
       }
 
-      setPasswordStatus({ ok: true, msg: "Пароль успешно обновлен и защищен SHA-256!" });
+      setPasswordStatus({ ok: true, msg: "Пароль обновлён" });
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
@@ -524,7 +515,7 @@ export default function AdminPage() {
           </div>
 
           {loginError && (
-            <div className="p-3.5 rounded-xl bg-red-950/40 border border-red-500/40 text-red-300 text-xs text-center font-medium">
+            <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/40 text-red-300 text-xs text-center font-medium">
               {loginError}
             </div>
           )}
@@ -567,14 +558,14 @@ export default function AdminPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       {isDemo && (
-        <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-amber-300 shadow-sm">
+        <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-amber-700 shadow-sm">
           <div className="flex items-center gap-2.5">
             <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse shrink-0" />
             <span>
               <strong>Режим демонстрации (Песочница):</strong> любые изменения услуг, цен, категорий и статусов заявок изолированы внутри этой сессии и <u>не влияют</u> на реальный сайт.
             </span>
           </div>
-          <span className="text-[11px] text-amber-400/80 font-mono shrink-0">
+          <span className="text-[11px] text-amber-700/80 font-mono shrink-0">
             Изоляция: активна
           </span>
         </div>
@@ -583,7 +574,7 @@ export default function AdminPage() {
       {/* Шапка панели управления */}
       <div className="p-5 rounded-2xl bg-brand-surface border border-brand-border flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
         <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-xl bg-black/60 border border-brand-border overflow-hidden flex items-center justify-center shrink-0">
+          <div className="w-12 h-12 rounded-xl bg-[var(--brand-secondary)] border border-brand-border overflow-hidden flex items-center justify-center shrink-0">
             {brand?.logoUrl ? (
               <img src={brand.logoUrl} alt={brand?.name || "Logo"} className="w-full h-full object-cover" />
             ) : (
@@ -606,13 +597,13 @@ export default function AdminPage() {
         </div>
 
         {/* Навигационные табы + кнопка Выйти */}
-        <div className="flex flex-wrap items-center gap-1.5 bg-black/40 p-1.5 rounded-xl border border-brand-border">
+        <div className="flex flex-wrap items-center gap-1.5 bg-[var(--brand-secondary)] p-1.5 rounded-xl border border-brand-border">
           <button
             onClick={() => setActiveTab("dashboard")}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               activeTab === "dashboard"
                 ? "bg-brand-accent text-white shadow-sm"
-                : "text-slate-400 hover:text-white"
+                : "text-theme-muted hover:text-theme-title"
             }`}
           >
             <LayoutDashboard className="w-3.5 h-3.5" />
@@ -624,7 +615,7 @@ export default function AdminPage() {
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               activeTab === "bookings"
                 ? "bg-brand-accent text-white shadow-sm"
-                : "text-slate-400 hover:text-white"
+                : "text-theme-muted hover:text-theme-title"
             }`}
           >
             <CalendarCheck className="w-3.5 h-3.5" />
@@ -636,7 +627,7 @@ export default function AdminPage() {
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               activeTab === "services"
                 ? "bg-brand-accent text-white shadow-sm"
-                : "text-slate-400 hover:text-white"
+                : "text-theme-muted hover:text-theme-title"
             }`}
           >
             <Wrench className="w-3.5 h-3.5" />
@@ -648,7 +639,7 @@ export default function AdminPage() {
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               activeTab === "photos"
                 ? "bg-brand-accent text-white shadow-sm"
-                : "text-slate-400 hover:text-white"
+                : "text-theme-muted hover:text-theme-title"
             }`}
           >
             <Camera className="w-3.5 h-3.5" />
@@ -660,7 +651,7 @@ export default function AdminPage() {
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               activeTab === "schedule"
                 ? "bg-brand-accent text-white shadow-sm"
-                : "text-slate-400 hover:text-white"
+                : "text-theme-muted hover:text-theme-title"
             }`}
           >
             <Clock className="w-3.5 h-3.5" />
@@ -672,7 +663,7 @@ export default function AdminPage() {
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               activeTab === "brand"
                 ? "bg-brand-accent text-white shadow-sm"
-                : "text-slate-400 hover:text-white"
+                : "text-theme-muted hover:text-theme-title"
             }`}
           >
             <Palette className="w-3.5 h-3.5" />
@@ -684,7 +675,7 @@ export default function AdminPage() {
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               activeTab === "security"
                 ? "bg-brand-accent text-white shadow-sm"
-                : "text-slate-400 hover:text-white"
+                : "text-theme-muted hover:text-theme-title"
             }`}
           >
             <Shield className="w-3.5 h-3.5" />
@@ -697,10 +688,10 @@ export default function AdminPage() {
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 activeTab === "demo"
                   ? "bg-brand-accent text-white shadow-sm"
-                  : "text-amber-400 hover:text-amber-300 hover:bg-amber-400/10 font-bold"
+                  : "text-amber-700 hover:text-amber-900 hover:bg-amber-400/10 font-bold"
               }`}
             >
-              <Share2 className="w-3.5 h-3.5 text-amber-400" />
+              <Share2 className="w-3.5 h-3.5 text-amber-600" />
               <span>🚀 Продажи & Демо</span>
             </button>
           )}
@@ -717,7 +708,7 @@ export default function AdminPage() {
 
           <button
             onClick={handleLogout}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs text-red-400 hover:text-white hover:bg-red-500/20 transition-all cursor-pointer ml-1"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs text-red-400 hover:text-theme-title hover:bg-red-500/20 transition-all cursor-pointer ml-1"
             title="Выйти из аккаунта"
           >
             <LogOut className="w-3.5 h-3.5" />
@@ -728,14 +719,14 @@ export default function AdminPage() {
 
       {/* Баннер активного демо-режима */}
       {isDemo && brand && (
-        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-amber-200 shadow-sm animate-in fade-in">
+        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-amber-700 shadow-sm animate-in fade-in">
           <div className="flex items-center gap-2.5">
             <span className="text-xl">🚀</span>
             <div>
-              <span className="font-bold text-white block">
+              <span className="font-bold text-amber-900 block">
                 Активен режим кастомизации / Демо: «{brand.name}»
               </span>
-              <span className="text-amber-300/80">
+              <span className="text-amber-800">
                 Вы можете сохранить эти настройки как постоянный бренд сайта в один клик, либо сбросить их к исходным.
               </span>
             </div>
@@ -758,7 +749,7 @@ export default function AdminPage() {
                 resetDemo();
                 window.location.reload();
               }}
-              className="h-8 px-3 text-xs text-slate-300 hover:text-white"
+              className="h-8 px-3 text-xs text-theme-title hover:text-theme-title"
             >
               Сбросить демо
             </Button>
@@ -835,7 +826,7 @@ export default function AdminPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="p-5 rounded-3xl bg-brand-surface border border-brand-border space-y-2">
-              <span className="text-[10px] uppercase font-bold text-emerald-400 tracking-wider flex items-center gap-1.5">
+              <span className="text-[10px] uppercase font-bold text-emerald-600 tracking-wider flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> Активно
               </span>
               <h4 className="font-bold text-theme-title text-sm">Защита от подбора (Brute Force)</h4>
@@ -883,8 +874,8 @@ export default function AdminPage() {
               <div
                 className={`p-3.5 rounded-2xl text-xs font-semibold text-center border ${
                   passwordStatus.ok
-                    ? "bg-emerald-950/40 border-emerald-500/40 text-emerald-300"
-                    : "bg-red-950/40 border-red-500/40 text-red-300"
+                    ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-600"
+                    : "bg-red-500/10 border-red-500/40 text-red-300"
                 }`}
               >
                 {passwordStatus.msg}
@@ -902,7 +893,7 @@ export default function AdminPage() {
               />
 
               <Input
-                label="Новый пароль (минимум 6 символов) *"
+                label="Новый пароль (минимум 8 символов) *"
                 type="password"
                 placeholder="••••••••"
                 value={newPassword}

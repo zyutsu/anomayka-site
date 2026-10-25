@@ -46,10 +46,10 @@ export function AdminDashboard({ bookings, services, onNavigateToBookings, onOpe
       return <span className="px-1.5 py-0.5 rounded-md bg-brand-accent/20 text-brand-accent font-bold text-[10px]">Сегодня</span>;
     }
     if (dateStr === tomorrowStr) {
-      return <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 font-bold text-[10px]">Завтра</span>;
+      return <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-600 font-bold text-[10px]">Завтра</span>;
     }
     if (dateStr === yesterdayStr) {
-      return <span className="px-1.5 py-0.5 rounded-md bg-slate-500/20 text-slate-400 font-bold text-[10px]">Вчера</span>;
+      return <span className="px-1.5 py-0.5 rounded-md bg-slate-500/20 text-theme-muted font-bold text-[10px]">Вчера</span>;
     }
     return <span className="text-[10px] text-theme-muted font-medium">{formatDateRu(dateStr)}</span>;
   };
@@ -111,10 +111,10 @@ export function AdminDashboard({ bookings, services, onNavigateToBookings, onOpe
         <div className="p-5 rounded-2xl bg-brand-surface border border-brand-border space-y-2">
           <div className="flex items-center justify-between text-theme-muted text-xs">
             <span>Ожидаемая выручка сегодня</span>
-            <TrendingUp className="w-4 h-4 text-emerald-400" />
+            <TrendingUp className="w-4 h-4 text-emerald-600" />
           </div>
           <div className="text-3xl font-black text-theme-title">{formatPrice(todayRevenue)}</div>
-          <p className="text-[11px] text-emerald-400 flex items-center gap-1">
+          <p className="text-[11px] text-emerald-600 flex items-center gap-1">
             <ArrowUpRight className="w-3 h-3" /> Без учета отмененных
           </p>
         </div>
@@ -167,14 +167,14 @@ export function AdminDashboard({ bookings, services, onNavigateToBookings, onOpe
                 className={`min-h-[68px] p-2 rounded-2xl border flex flex-col items-center justify-center text-center transition-all ${
                   hasBooking
                     ? "bg-brand-accent/20 border-brand-accent text-brand-accent font-bold shadow-sm shadow-brand-accent/20"
-                    : "bg-black/30 border-brand-border/40 text-slate-400 hover:border-brand-border"
+                    : "bg-[var(--brand-secondary)] border-brand-border/40 text-theme-muted hover:border-brand-border"
                 }`}
               >
                 <span className="text-[10px] font-mono font-medium opacity-75 leading-none">
                   {hr}
                 </span>
                 <span className={`text-[11px] sm:text-xs font-semibold leading-none mt-1.5 ${
-                  hasBooking ? "text-brand-accent" : "text-slate-400"
+                  hasBooking ? "text-brand-accent" : "text-theme-muted"
                 }`}>
                   {hasBooking ? "Занято" : "Свободно"}
                 </span>
@@ -193,12 +193,12 @@ export function AdminDashboard({ bookings, services, onNavigateToBookings, onOpe
             </h3>
 
             {/* Переключатели периода */}
-            <div className="flex items-center bg-black/40 p-1 rounded-xl border border-brand-border text-xs">
+            <div className="flex items-center bg-[var(--brand-secondary)] p-1 rounded-xl border border-brand-border text-xs">
               <button
                 type="button"
                 onClick={() => setPeriodView("week")}
                 className={`px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
-                  periodView === "week" ? "bg-brand-accent text-white shadow-sm" : "text-slate-400 hover:text-white"
+                  periodView === "week" ? "bg-brand-accent text-white shadow-sm" : "text-theme-muted hover:text-theme-title"
                 }`}
               >
                 За последние 7 дней (по умолчанию)
@@ -207,7 +207,7 @@ export function AdminDashboard({ bookings, services, onNavigateToBookings, onOpe
                 type="button"
                 onClick={() => setPeriodView("today")}
                 className={`px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
-                  periodView === "today" ? "bg-brand-accent text-white shadow-sm" : "text-slate-400 hover:text-white"
+                  periodView === "today" ? "bg-brand-accent text-white shadow-sm" : "text-theme-muted hover:text-theme-title"
                 }`}
               >
                 Сегодня
@@ -269,7 +269,7 @@ export function AdminDashboard({ bookings, services, onNavigateToBookings, onOpe
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <strong className={`text-theme-title text-sm ${isCancelled ? "line-through text-slate-400" : ""}`}>
+                        <strong className={`text-theme-title text-sm ${isCancelled ? "line-through text-theme-muted" : ""}`}>
                           {b.clientName}
                         </strong>
                         <span className="font-mono text-[10px] text-brand-accent bg-brand-accent/10 px-1.5 py-0.5 rounded border border-brand-accent/20">
@@ -280,7 +280,7 @@ export function AdminDashboard({ bookings, services, onNavigateToBookings, onOpe
                         {b.serviceTitle} • <span className="text-theme-title font-medium">{b.carModel || "Авто не указано"}</span> • <a href={`tel:${b.clientPhone}`} className="text-brand-accent hover:underline">{b.clientPhone}</a>
                       </span>
                       {b.comment && (
-                        <p className="text-[11px] text-slate-400 italic mt-0.5">
+                        <p className="text-[11px] text-theme-muted italic mt-0.5">
                           "{b.comment}"
                         </p>
                       )}
@@ -291,14 +291,14 @@ export function AdminDashboard({ bookings, services, onNavigateToBookings, onOpe
                     <span className="font-bold text-theme-title text-sm">{formatPrice(b.price)}</span>
                     <span className={`px-2.5 py-0.5 rounded-full text-[10px] uppercase font-bold border ${
                       b.status === "confirmed"
-                        ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                        ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30"
                         : b.status === "completed"
                         ? "bg-sky-500/15 text-sky-400 border-sky-500/30"
                         : b.status === "cancelled"
                         ? "bg-red-500/15 text-red-400 border-red-500/30"
                         : b.status === "call_requested"
                         ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
-                        : "bg-white/10 text-slate-300 border-white/10"
+                        : "bg-brand-accent/10 text-theme-title border-brand-border"
                     }`}>
                       {b.status === "confirmed" ? "Подтверждена" :
                        b.status === "completed" ? "Выполнена" :

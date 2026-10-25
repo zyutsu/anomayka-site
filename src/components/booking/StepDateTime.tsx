@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import { ArrowLeft, ArrowRight, CalendarDays, Clock3 } from "lucide-react";
 import { Service } from "@/lib/types";
-import { Calendar as CalendarIcon, Clock, ArrowLeft, ArrowRight, AlertCircle, CheckCircle } from "lucide-react";
 import { formatDuration } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -20,6 +20,28 @@ interface SlotItem {
   reason?: string;
 }
 
+/** Локальная дата в формате YYYY-MM-DD (без сдвига часового пояса). */
+function toIsoDate(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return y + "-" + m + "-" + d;
+}
+
+function buildDates() {
+  const today = new Date();
+  return Array.from({ length: 14 }, (_, i) => {
+    const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
+    return {
+      iso: toIsoDate(d),
+      weekday: d.toLocaleDateString("ru-RU", { weekday: "short" }).replace(".", ""),
+      day: d.getDate(),
+      month: d.toLocaleDateString("ru-RU", { month: "short" }).replace(".", ""),
+      isToday: i === 0,
+    };
+  });
+}
+
 export function StepDateTime({
   service,
   selectedDate,
@@ -27,242 +49,177 @@ export function StepDateTime({
   onSelectDateTime,
   onBack,
 }: StepDateTimeProps) {
-  // Генерация ближайших 14 дней
-  const generateDates = () => {
-    const dates = [];
-    const now = new Date();
-    for (let i = 0; i < 14; i++) {
-      const d = new Date(now);
-      d.setDate(now.getDate() + i);
-      const iso = d.toISOString().split("T")[0];
-      const dayOfWeek = d.toLocaleDateString("ru-RU", { weekday: "short" });
-      const dayNum = d.getDate();
-      const month = d.toLocaleDateString("ru-RU", { month: "short" });
-      dates.push({ iso, dayOfWeek, dayNum, month, isToday: i === 0 });
-    }
-    return dates;
-  };
-
-  const datesList = generateDates();
-  const [currentDate, setCurrentDate] = useState<string>(
-    selectedDate || datesList[0].iso
-  );
-  const [currentTime, setCurrentTime] = useState<string>(selectedTime || "");
+  const dates = React.useMemo(buildDates, []);
+  const [currentDate, setCurrentDate] = useState(selectedDate || dates[0].iso);
+  const [currentTime, setCurrentTime] = useState(selectedTime || "");
   const [slots, setSlots] = useState<SlotItem[]>([]);
-  const [isLoadingSlots, setIsLoadingSlots] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
 
-  // Загрузка слотов при смене даты или услуги
   useEffect(() => {
-    let isCancelled = false;
+    let cancelled = false;
+    setLoading(true);
 
-    async function fetchSlots() {
-      setIsLoadingSlots(true);
-      try {
-        const res = await fetch(
-          `/api/slots?date=${currentDate}&duration=${service.durationMinutes}`
-        );
-        if (res.ok) {
-          const data = await res.json();
-          if (!isCancelled) {
-            setSlots(data.slots || []);
-          }
-        }
-      } catch (err) {
-        console.error("Ошибка получения слотов:", err);
-      } finally {
-        if (!isCancelled) {
-          setIsLoadingSlots(false);
-        }
-      }
-    }
-
-    fetchSlots();
+    fetch("/api/slots?date=" + currentDate + "&duration=" + service.durationMinutes)
+      .then((res) => (res.ok ? res.json() : { slots: [] }))
+      .then((data) => {
+        if (!cancelled) setSlots(data.slots || []);
+      })
+      .catch(() => {
+        if (!cancelled) setSlots([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
 
     return () => {
-      isCancelled = true;
+      cancelled = true;
     };
   }, [currentDate, service.durationMinutes]);
 
-  const handleDateClick = (iso: string) => {
-    setCurrentDate(iso);
-    setCurrentTime(""); // сбрасываем время при смене даты
-  };
+  const groups = [
+    { label: "Утро", items: slots.filter((s) => Number(s.time.slice(0, 2)) < 12) },
+    { label: "День", items: slots.filter((s) => Number(s.time.slice(0, 2)) >= 12 && Number(s.time.slice(0, 2)) < 17) },
+    { label: "Вечер", items: slots.filter((s) => Number(s.time.slice(0, 2)) >= 17) },
+  ].filter((g) => g.items.length > 0);
 
-  const handleTimeClick = (timeStr: string) => {
-    setCurrentTime(timeStr);
-  };
-
-  const handleProceed = () => {
-    if (currentDate && currentTime) {
-      onSelectDateTime(currentDate, currentTime);
-    }
-  };
-
-  // Группировка слотов: утро (до 13:00), день (13:00-17:00), вечер (после 17:00)
-  const morningSlots = slots.filter((s) => parseInt(s.time.split(":")[0], 10) < 13);
-  const afternoonSlots = slots.filter((s) => {
-    const h = parseInt(s.time.split(":")[0], 10);
-    return h >= 13 && h < 17;
-  });
-  const eveningSlots = slots.filter((s) => parseInt(s.time.split(":")[0], 10) >= 17);
+  const freeCount = slots.filter((s) => s.available).length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       <div>
         <button
+          type="button"
           onClick={onBack}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-white mb-2 transition-colors cursor-pointer"
+          className="mb-3 inline-flex items-center gap-1.5 text-[12px] font-medium text-theme-muted transition-colors hover:text-theme-title"
         >
-          <ArrowLeft className="w-3.5 h-3.5" /> Назад к услугам
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Назад к услугам
         </button>
-        <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-          Шаг 3. Выберите дату и время визита
+        <p className="eyebrow mb-3">Шаг 3 из 5</p>
+        <h2 className="heading text-[clamp(1.5rem,3vw,2rem)] text-theme-title">
+          Когда вам удобно?
         </h2>
-        <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400 mt-1">
-          <span>Услуга: <strong className="text-white">{service.title}</strong></span>
-          <span className="w-1 h-1 rounded-full bg-slate-600" />
-          <span className="text-brand-accent font-medium">
-            Длительность: {formatDuration(service.durationMinutes)}
-          </span>
-        </div>
+        <p className="mt-2 text-[13px] leading-relaxed text-theme-muted">
+          {service.title} · {formatDuration(service.durationMinutes)}
+        </p>
       </div>
 
-      {/* Горизонтальный скроллер дней */}
-      <div className="space-y-2">
-        <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block">
-          Дата записи
-        </label>
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none snap-x">
-          {datesList.map((item) => {
-            const isSelected = item.iso === currentDate;
+      <div>
+        <div className="mb-2.5 flex items-center justify-between">
+          <p className="text-[12px] font-medium text-theme-title">Дата</p>
+          <p className="text-[11px] text-theme-muted">Ближайшие 14 дней</p>
+        </div>
+        <div className="-mx-5 flex gap-1.5 overflow-x-auto px-5 pb-1 scrollbar-none sm:mx-0 sm:px-0">
+          {dates.map((item) => {
+            const active = item.iso === currentDate;
             return (
               <button
                 key={item.iso}
-                onClick={() => handleDateClick(item.iso)}
-                className={`flex flex-col items-center justify-center min-w-[70px] sm:min-w-[80px] py-3 px-2 rounded-2xl border text-center transition-all cursor-pointer snap-start shrink-0 ${
-                  isSelected
-                    ? "bg-brand-accent border-brand-accent text-white shadow-lg shadow-brand-accent/30 font-bold scale-[1.03]"
-                    : "bg-brand-surface border-white/10 hover:border-white/20 text-slate-300 hover:text-white"
-                }`}
+                type="button"
+                onClick={() => {
+                  setCurrentDate(item.iso);
+                  setCurrentTime("");
+                }}
+                className={
+                  "flex w-[62px] shrink-0 flex-col items-center rounded-xl border py-2.5 transition-colors " +
+                  (active
+                    ? "border-transparent bg-theme-title text-brand-primary"
+                    : "border-brand-border bg-brand-surface text-theme-title hover:border-brand-accent/50")
+                }
               >
-                <span className="text-[11px] uppercase tracking-wider opacity-80">
-                  {item.isToday ? "Сегодня" : item.dayOfWeek}
+                <span className={"text-[10px] uppercase " + (active ? "opacity-70" : "text-theme-muted")}>
+                  {item.isToday ? "сегодня" : item.weekday}
                 </span>
-                <span className="text-lg font-black my-0.5">{item.dayNum}</span>
-                <span className="text-[10px] opacity-75">{item.month}</span>
+                <span className="my-0.5 text-[17px] font-bold leading-none">{item.day}</span>
+                <span className={"text-[10px] " + (active ? "opacity-70" : "text-theme-muted")}>
+                  {item.month}
+                </span>
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Сетка времени */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
-            Доступное время начала
-          </label>
-          <span className="text-xs text-slate-400">
-            Окна с учетом длительности {formatDuration(service.durationMinutes)}
-          </span>
+      <div>
+        <div className="mb-2.5 flex items-center justify-between">
+          <p className="text-[12px] font-medium text-theme-title">Время начала</p>
+          {!loading && (
+            <p className="text-[11px] text-theme-muted">
+              {freeCount > 0 ? "свободно окон: " + freeCount : "нет свободных окон"}
+            </p>
+          )}
         </div>
 
-        {isLoadingSlots ? (
-          <div className="py-12 flex flex-col items-center justify-center gap-3 text-slate-400">
-            <div className="w-6 h-6 border-2 border-brand-accent border-t-transparent rounded-full animate-spin" />
-            <span className="text-xs">Рассчитываем свободные интервалы...</span>
+        {loading ? (
+          <div className="flex items-center justify-center gap-2 rounded-2xl border border-brand-border bg-brand-surface py-10 text-[12px] text-theme-muted">
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-brand-accent border-t-transparent" />
+            Проверяем расписание…
           </div>
         ) : slots.length === 0 ? (
-          <div className="py-10 text-center bg-white/5 rounded-2xl border border-white/10 text-slate-400 text-sm">
-            На выбранную дату нет свободных слотов. Пожалуйста, выберите другой день.
+          <div className="rounded-2xl border border-brand-border bg-brand-surface px-5 py-8 text-center">
+            <CalendarDays className="mx-auto h-6 w-6 text-theme-muted" />
+            <p className="mt-3 text-[13px] font-medium text-theme-title">На этот день записи нет</p>
+            <p className="mt-1 text-[12px] text-theme-muted">Выберите другую дату или позвоните мастеру.</p>
           </div>
         ) : (
           <div className="space-y-4">
-            {/* Утро */}
-            {morningSlots.length > 0 && (
-              <div className="space-y-2">
-                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">
-                  Утро
-                </span>
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
-                  {morningSlots.map((s) => renderSlotButton(s))}
+            {groups.map((group) => (
+              <div key={group.label}>
+                <p className="mono-label mb-2">{group.label}</p>
+                <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-6 lg:grid-cols-8">
+                  {group.items.map((slot) => {
+                    const active = slot.time === currentTime;
+                    return (
+                      <button
+                        key={slot.time}
+                        type="button"
+                        disabled={!slot.available}
+                        onClick={() => setCurrentTime(slot.time)}
+                        title={!slot.available ? slot.reason || "Занято" : undefined}
+                        className={
+                          "h-10 rounded-xl border text-[12px] font-semibold transition-colors " +
+                          (active
+                            ? "border-transparent bg-brand-accent text-white"
+                            : slot.available
+                            ? "border-brand-border bg-brand-surface text-theme-title hover:border-brand-accent/60"
+                            : "cursor-not-allowed border-transparent bg-[var(--brand-secondary)] text-theme-muted/40 line-through")
+                        }
+                      >
+                        {slot.time}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
-            )}
-
-            {/* День */}
-            {afternoonSlots.length > 0 && (
-              <div className="space-y-2">
-                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">
-                  День
-                </span>
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
-                  {afternoonSlots.map((s) => renderSlotButton(s))}
-                </div>
-              </div>
-            )}
-
-            {/* Вечер */}
-            {eveningSlots.length > 0 && (
-              <div className="space-y-2">
-                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">
-                  Вечер
-                </span>
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
-                  {eveningSlots.map((s) => renderSlotButton(s))}
-                </div>
-              </div>
-            )}
+            ))}
           </div>
         )}
       </div>
 
-      {/* Кнопка перехода к следующему шагу */}
-      <div className="pt-4 border-t border-white/10 flex items-center justify-between gap-4">
-        <div className="text-xs text-slate-400">
+      <div className="flex flex-col gap-3 border-t border-brand-border pt-5 sm:flex-row sm:items-center sm:justify-between">
+        <p className="inline-flex items-center gap-2 text-[12px] text-theme-muted">
+          <Clock3 className="h-4 w-4 text-brand-accent" />
           {currentTime ? (
-            <span className="text-white font-medium">
-              Выбрано: <strong>{currentDate}</strong> в <strong>{currentTime}</strong>
+            <span>
+              Выбрано: <strong className="font-semibold text-theme-title">{currentTime}</strong>
             </span>
           ) : (
-            <span>Выберите удобное свободное время</span>
+            "Выберите удобное время"
           )}
-        </div>
+        </p>
 
         <Button
-          onClick={handleProceed}
+          type="button"
+          onClick={() => currentTime && onSelectDateTime(currentDate, currentTime)}
           disabled={!currentTime}
           size="lg"
-          className="gap-2.5 h-14 px-8 text-base font-bold rounded-2xl shadow-xl shadow-brand-accent/25 hover:scale-[1.02] transition-all"
+          className="h-12 w-full text-[13px] sm:w-auto"
         >
-          <span>Далее: Контакты</span>
-          <ArrowRight className="w-5 h-5" />
+          Продолжить
+          <ArrowRight className="h-4 w-4" />
         </Button>
       </div>
     </div>
   );
-
-  function renderSlotButton(slot: SlotItem) {
-    const isSelected = currentTime === slot.time;
-    const isAvailable = slot.available;
-
-    return (
-      <button
-        key={slot.time}
-        type="button"
-        disabled={!isAvailable}
-        onClick={() => handleTimeClick(slot.time)}
-        className={`h-11 rounded-xl text-xs font-semibold flex items-center justify-center transition-all cursor-pointer border ${
-          isSelected
-            ? "bg-brand-accent border-brand-accent text-white shadow-md shadow-brand-accent/30 scale-105"
-            : isAvailable
-            ? "bg-brand-surface border-white/10 hover:border-brand-accent text-white hover:bg-brand-surface/90"
-            : "bg-black/30 border-white/5 text-slate-600 line-through cursor-not-allowed"
-        }`}
-        title={!isAvailable ? slot.reason || "Занято" : undefined}
-      >
-        {slot.time}
-      </button>
-    );
-  }
 }
+

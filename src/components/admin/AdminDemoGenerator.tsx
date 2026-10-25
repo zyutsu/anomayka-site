@@ -409,30 +409,30 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
         <div className="flex flex-wrap sm:flex-nowrap gap-1.5 shrink-0">
           <button
             onClick={() => applyPreset("service")}
-            className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 text-theme-title border border-brand-border transition-all flex items-center gap-1.5 cursor-pointer"
+            className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-[var(--brand-secondary)] hover:bg-brand-accent/10 text-theme-title border border-brand-border transition-all flex items-center gap-1.5 cursor-pointer"
           >
             <Wrench className="w-3.5 h-3.5 text-blue-400" />
             <span>ТО</span>
           </button>
           <button
             onClick={() => applyPreset("detailing")}
-            className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 text-theme-title border border-brand-border transition-all flex items-center gap-1.5 cursor-pointer"
+            className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-[var(--brand-secondary)] hover:bg-brand-accent/10 text-theme-title border border-brand-border transition-all flex items-center gap-1.5 cursor-pointer"
           >
-            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+            <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
             <span>Детейлинг</span>
           </button>
           <button
             onClick={() => applyPreset("tire")}
-            className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 text-theme-title border border-brand-border transition-all flex items-center gap-1.5 cursor-pointer"
+            className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-[var(--brand-secondary)] hover:bg-brand-accent/10 text-theme-title border border-brand-border transition-all flex items-center gap-1.5 cursor-pointer"
           >
             <Disc className="w-3.5 h-3.5 text-amber-400" />
             <span>Шины</span>
           </button>
           <button
             onClick={() => applyPreset("tuning")}
-            className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 text-theme-title border border-brand-border transition-all flex items-center gap-1.5 cursor-pointer"
+            className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-[var(--brand-secondary)] hover:bg-brand-accent/10 text-theme-title border border-brand-border transition-all flex items-center gap-1.5 cursor-pointer"
           >
-            <Gauge className="w-3.5 h-3.5 text-rose-400" />
+            <Gauge className="w-3.5 h-3.5 text-red-500" />
             <span>Тюнинг</span>
           </button>
         </div>
@@ -467,7 +467,7 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
                   <span className="text-[10px] text-brand-accent font-medium">Красивый адрес для клиента</span>
                 </label>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono text-theme-muted shrink-0 px-2.5 py-2 rounded-xl bg-black/40 border border-brand-border">
+                  <span className="text-xs font-mono text-theme-muted shrink-0 px-2.5 py-2 rounded-xl bg-[var(--brand-secondary)] border border-brand-border">
                     /d/
                   </span>
                   <Input
@@ -483,7 +483,7 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
               </div>
 
               {/* ВЫБОР КАТЕГОРИЙ И УСЛУГ В ДЕМКЕ */}
-              <div className="p-4 rounded-2xl bg-black/30 border border-brand-border space-y-2.5">
+              <div className="p-4 rounded-2xl bg-[var(--brand-secondary)] border border-brand-border space-y-2.5">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-theme-title flex items-center gap-1.5">
                     <SlidersHorizontal className="w-3.5 h-3.5 text-brand-accent" />
@@ -516,14 +516,14 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
                         className={`p-2.5 rounded-xl border text-left flex items-center gap-2.5 transition-all cursor-pointer ${
                           isChecked
                             ? "bg-brand-accent/10 border-brand-accent text-theme-title"
-                            : "bg-black/20 border-brand-border/60 text-theme-muted hover:border-brand-border"
+                            : "bg-[var(--brand-secondary)] border-brand-border/60 text-theme-muted hover:border-brand-border"
                         }`}
                       >
                         <div
                           className={`w-4 h-4 rounded-md flex items-center justify-center shrink-0 border ${
                             isChecked
                               ? "bg-brand-accent border-brand-accent text-black"
-                              : "border-brand-border bg-black/40"
+                              : "border-brand-border bg-[var(--brand-secondary)]"
                           }`}
                         >
                           {isChecked && <Check className="w-3 h-3 text-white stroke-[3]" />}
@@ -614,8 +614,8 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
                         onClick={() => setAccentColor(col.hex)}
                         className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2 border transition-all cursor-pointer ${
                           isSelected
-                            ? "border-white bg-white/10 text-white shadow-md scale-105"
-                            : "border-brand-border bg-black/20 text-theme-muted hover:text-white hover:border-white/30"
+                            ? "border-brand-accent bg-brand-accent/10 text-theme-title shadow-md scale-105"
+                            : "border-brand-border bg-[var(--brand-secondary)] text-theme-muted hover:text-theme-title hover:border-brand-accent/40"
                         }`}
                       >
                         <span
@@ -652,7 +652,7 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
                     placeholder="https://... или загрузите файл справа"
                     className="flex-1 text-xs"
                   />
-                  <label className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-brand-border text-xs font-semibold text-theme-title cursor-pointer transition-colors flex items-center gap-1.5 shrink-0">
+                  <label className="px-4 py-2 rounded-xl bg-[var(--brand-secondary)] hover:bg-brand-accent/10 border border-brand-border text-xs font-semibold text-theme-title cursor-pointer transition-colors flex items-center gap-1.5 shrink-0">
                     <Upload className="w-3.5 h-3.5" />
                     <span>{isUploading ? "..." : "Файл"}</span>
                     <input
@@ -664,8 +664,8 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
                     />
                   </label>
                 </div>
-                <div className="mt-2 flex items-center gap-3 p-2.5 rounded-2xl bg-black/40 border border-brand-border">
-                  <div className="w-10 h-10 rounded-xl overflow-hidden border border-brand-border shrink-0 bg-black/60 flex items-center justify-center shadow-md">
+                <div className="mt-2 flex items-center gap-3 p-2.5 rounded-2xl bg-[var(--brand-secondary)] border border-brand-border">
+                  <div className="w-10 h-10 rounded-xl overflow-hidden border border-brand-border shrink-0 bg-[var(--brand-secondary)] flex items-center justify-center shadow-md">
                     <img
                       src={logoUrl.trim() || generateMonogramLogo(name.trim() || "Автосервис", accentColor)}
                       alt="Logo Preview"
@@ -684,7 +684,7 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
                     <button
                       type="button"
                       onClick={() => setLogoUrl("")}
-                      className="text-xs text-rose-400 hover:text-rose-300 hover:underline px-2 cursor-pointer shrink-0"
+                      className="text-xs text-red-500 hover:text-red-400 hover:underline px-2 cursor-pointer shrink-0"
                     >
                       Сбросить к эмблеме
                     </button>
@@ -706,12 +706,12 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
               </span>
 
               {/* Переключатель вида ссылки */}
-              <div className="flex items-center bg-black/40 p-0.5 rounded-xl border border-brand-border text-[10px] font-semibold">
+              <div className="flex items-center bg-[var(--brand-secondary)] p-0.5 rounded-xl border border-brand-border text-[10px] font-semibold">
                 <button
                   type="button"
                   onClick={() => setLinkMode("short")}
                   className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
-                    linkMode === "short" ? "bg-brand-accent text-white font-bold" : "text-theme-muted hover:text-white"
+                    linkMode === "short" ? "bg-brand-accent text-white font-bold" : "text-theme-muted hover:text-theme-title"
                   }`}
                 >
                   Короткая
@@ -720,7 +720,7 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
                   type="button"
                   onClick={() => setLinkMode("direct")}
                   className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
-                    linkMode === "direct" ? "bg-brand-accent text-white font-bold" : "text-theme-muted hover:text-white"
+                    linkMode === "direct" ? "bg-brand-accent text-white font-bold" : "text-theme-muted hover:text-theme-title"
                   }`}
                 >
                   Прямая
@@ -739,7 +739,7 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
                 sel?.addRange(range);
               }}
               title="Нажмите, чтобы выделить всю ссылку"
-              className="p-3.5 rounded-2xl bg-black/50 border border-brand-accent/40 font-mono text-xs font-bold text-brand-accent break-all select-all flex items-center justify-between gap-2 cursor-pointer hover:border-brand-accent transition-colors"
+              className="p-3.5 rounded-2xl bg-[var(--brand-secondary)] border border-brand-accent/40 font-mono text-xs font-bold text-brand-accent break-all select-all flex items-center justify-between gap-2 cursor-pointer hover:border-brand-accent transition-colors"
             >
               <span className="break-all">{currentActiveUrl}</span>
               <Link2 className="w-4 h-4 shrink-0 text-brand-accent/70" />
@@ -753,7 +753,7 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
               >
                 {copiedLink ? (
                   <>
-                    <Check className="w-4 h-4 text-emerald-300 stroke-[3]" />
+                    <Check className="w-4 h-4 text-emerald-600 stroke-[3]" />
                     <span>Скопировано!</span>
                   </>
                 ) : (
@@ -781,13 +781,13 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
             </div>
 
             {/* Подсказка об управлении услугами в демке */}
-            <div className="p-3 rounded-2xl bg-brand-accent/10 border border-brand-accent/20 text-xs text-slate-300 space-y-1">
+            <div className="p-3 rounded-2xl bg-brand-accent/10 border border-brand-accent/20 text-xs text-theme-title space-y-1">
               <div className="font-bold text-theme-title flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5 text-brand-accent" />
                 <span>Редактирование услуг в демо:</span>
               </div>
               <p className="text-[11px] text-theme-muted leading-relaxed">
-                Внутри созданной демки можно войти в панель управления (<code className="text-brand-accent font-bold">/admin</code>) под логином <code className="text-white font-bold">anomayka</code> и паролем <code className="text-white font-bold">AutoPro#2026</code>. Любые правки цен и услуг безопасны и не меняют основной сайт!
+                Внутри созданной демки можно войти в панель управления (<code className="text-brand-accent font-bold">/admin</code>) под логином <code className="text-theme-title font-bold">anomayka</code> и паролем <code className="text-theme-title font-bold">AutoPro#2026</code>. Любые правки цен и услуг безопасны и не меняют основной сайт!
               </p>
             </div>
           </div>
@@ -805,14 +805,14 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
             </div>
 
             {/* Выбор стиля сообщения */}
-            <div className="grid grid-cols-4 gap-1.5 p-1 rounded-xl bg-black/40 border border-brand-border text-[11px]">
+            <div className="grid grid-cols-4 gap-1.5 p-1 rounded-xl bg-[var(--brand-secondary)] border border-brand-border text-[11px]">
               <button
                 type="button"
                 onClick={() => setPitchStyle("friendly")}
                 className={`py-1.5 px-2 rounded-lg font-medium transition-all cursor-pointer ${
                   pitchStyle === "friendly"
                     ? "bg-brand-accent text-white font-bold shadow-sm"
-                    : "text-theme-muted hover:text-white"
+                    : "text-theme-muted hover:text-theme-title"
                 }`}
               >
                 Живой
@@ -823,7 +823,7 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
                 className={`py-1.5 px-2 rounded-lg font-medium transition-all cursor-pointer ${
                   pitchStyle === "business"
                     ? "bg-brand-accent text-white font-bold shadow-sm"
-                    : "text-theme-muted hover:text-white"
+                    : "text-theme-muted hover:text-theme-title"
                 }`}
               >
                 Деловой
@@ -834,7 +834,7 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
                 className={`py-1.5 px-2 rounded-lg font-medium transition-all cursor-pointer ${
                   pitchStyle === "tuning"
                     ? "bg-brand-accent text-white font-bold shadow-sm"
-                    : "text-theme-muted hover:text-white"
+                    : "text-theme-muted hover:text-theme-title"
                 }`}
               >
                 Тюнинг
@@ -845,7 +845,7 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
                 className={`py-1.5 px-2 rounded-lg font-medium transition-all cursor-pointer ${
                   pitchStyle === "short"
                     ? "bg-brand-accent text-white font-bold shadow-sm"
-                    : "text-theme-muted hover:text-white"
+                    : "text-theme-muted hover:text-theme-title"
                 }`}
               >
                 Краткий
@@ -853,7 +853,7 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
             </div>
 
             {/* Предпросмотр текста */}
-            <div className="p-3.5 rounded-2xl bg-black/50 border border-brand-border/60 text-xs text-slate-300 leading-relaxed max-h-48 overflow-y-auto whitespace-pre-wrap select-all font-sans">
+            <div className="p-3.5 rounded-2xl bg-[var(--brand-secondary)] border border-brand-border/60 text-xs text-theme-title leading-relaxed max-h-48 overflow-y-auto whitespace-pre-wrap select-all font-sans">
               {getPitchText(pitchStyle)}
             </div>
 
@@ -861,11 +861,11 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
             <div className="space-y-2">
               <Button
                 onClick={handleCopyPitch}
-                className="w-full flex items-center justify-center gap-2 cursor-pointer bg-white/10 hover:bg-white/20 text-white font-bold border border-white/20"
+                className="w-full flex items-center justify-center gap-2 cursor-pointer bg-brand-accent/10 hover:bg-brand-accent/20 text-theme-title font-bold border border-brand-border"
               >
                 {copiedPitch ? (
                   <>
-                    <Check className="w-4 h-4 text-emerald-300 stroke-[3]" />
+                    <Check className="w-4 h-4 text-emerald-600 stroke-[3]" />
                     <span>Текст скопирован!</span>
                   </>
                 ) : (
@@ -894,7 +894,7 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
                       href={waUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 flex items-center justify-center gap-1.5 font-semibold transition-colors"
+                      className="px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 border border-emerald-500/20 flex items-center justify-center gap-1.5 font-semibold transition-colors"
                     >
                       <Send className="w-3.5 h-3.5" />
                       <span>В WhatsApp {normPhone ? `(+${normPhone})` : ""}</span>
@@ -926,7 +926,7 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
                 {savedDemos.map((item) => (
                   <div
                     key={item.id}
-                    className="p-2.5 rounded-xl bg-black/20 border border-brand-border/60 flex items-center justify-between gap-3 text-xs"
+                    className="p-2.5 rounded-xl bg-[var(--brand-secondary)] border border-brand-border/60 flex items-center justify-between gap-3 text-xs"
                   >
                     <div className="min-w-0 flex items-center gap-2">
                       <span
@@ -948,7 +948,7 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
                           copyToClipboard(toCopy);
                           alert(`Ссылка для «${item.name}» скопирована!`);
                         }}
-                        className="p-1.5 rounded-lg hover:bg-white/10 text-theme-muted hover:text-white transition-colors cursor-pointer"
+                        className="p-1.5 rounded-lg hover:bg-brand-accent/10 text-theme-muted hover:text-theme-title transition-colors cursor-pointer"
                         title="Скопировать ссылку"
                       >
                         <Copy className="w-3.5 h-3.5" />
@@ -957,14 +957,14 @@ export function AdminDemoGenerator({ currentBrand }: { currentBrand: BrandSettin
                         href={item.url || item.shortUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="p-1.5 rounded-lg hover:bg-white/10 text-theme-muted hover:text-white transition-colors"
+                        className="p-1.5 rounded-lg hover:bg-brand-accent/10 text-theme-muted hover:text-theme-title transition-colors"
                         title="Открыть"
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
                       </a>
                       <button
                         onClick={() => handleDeleteHistoryItem(item.id)}
-                        className="p-1.5 rounded-lg hover:bg-white/10 text-rose-400 hover:text-rose-300 transition-colors cursor-pointer"
+                        className="p-1.5 rounded-lg hover:bg-brand-accent/10 text-red-500 hover:text-red-400 transition-colors cursor-pointer"
                         title="Удалить из истории"
                       >
                         <Trash2 className="w-3.5 h-3.5" />

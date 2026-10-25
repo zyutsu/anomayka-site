@@ -169,7 +169,7 @@ export function AdminServices({
           const catServicesCount = services.filter((s) => s.categoryId === currentCat.id).length;
 
           return (
-            <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-brand-border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs animate-in fade-in">
+            <div className="p-3.5 rounded-2xl bg-[var(--brand-secondary)] border border-brand-border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs animate-in fade-in">
               <div className="flex items-center gap-2">
                 <span className="text-theme-muted">Категория:</span>
                 <strong className="text-theme-title text-sm">{currentCat.title}</strong>
@@ -249,7 +249,7 @@ export function AdminServices({
                 <div className="flex items-center gap-1 shrink-0">
                   <button
                     onClick={() => setEditingService(srv)}
-                    className="p-2 rounded-xl text-theme-muted hover:text-theme-title hover:bg-white/5 transition-colors"
+                    className="p-2 rounded-xl text-theme-muted hover:text-theme-title hover:bg-[var(--brand-secondary)] transition-colors"
                     title="Редактировать"
                   >
                     <Edit2 className="w-4 h-4" />
@@ -286,7 +286,7 @@ export function AdminServices({
                   }
                   className={`flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1 rounded-full cursor-pointer transition-colors ${
                     srv.isActive
-                      ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                      ? "bg-emerald-500/15 text-emerald-600 border border-emerald-500/30"
                       : "bg-red-500/15 text-red-400 border border-red-500/30"
                   }`}
                 >
@@ -301,7 +301,7 @@ export function AdminServices({
 
       {/* Модалка редактирования услуги */}
       {editingService && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-lg bg-brand-surface border border-brand-border rounded-3xl p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
             <h3 className="text-base font-bold text-theme-title">
               {editingService.id ? "Редактировать услугу" : "Добавить новую услугу"}
@@ -309,13 +309,13 @@ export function AdminServices({
 
             <form onSubmit={handleSaveServiceForm} className="space-y-3 text-xs">
               <div>
-                <label className="block text-slate-300 mb-1">Категория</label>
+                <label className="block text-theme-title mb-1">Категория</label>
                 <select
                   value={editingService.categoryId}
                   onChange={(e) =>
                     setEditingService({ ...editingService, categoryId: e.target.value })
                   }
-                  className="w-full h-10 px-3 rounded-2xl bg-black/40 border border-brand-border text-theme-title focus:outline-none focus:border-brand-accent"
+                  className="w-full h-10 px-3 rounded-2xl bg-[var(--brand-secondary)] border border-brand-border text-theme-title focus:outline-none focus:border-brand-accent"
                 >
                   {categories.map((c) => (
                     <option key={c.id} value={c.id}>
@@ -361,7 +361,7 @@ export function AdminServices({
               </div>
 
               <div className="space-y-1">
-                <label className="block text-slate-300">Подробное описание процедуры</label>
+                <label className="block text-theme-title">Подробное описание процедуры</label>
                 <textarea
                   rows={3}
                   value={editingService.description || ""}
@@ -369,7 +369,7 @@ export function AdminServices({
                     setEditingService({ ...editingService, description: e.target.value })
                   }
                   placeholder="Что входит в услугу, гарантии, материалы..."
-                  className="w-full rounded-2xl bg-black/40 border border-brand-border p-3 text-theme-title focus:outline-none focus:border-brand-accent resize-none"
+                  className="w-full rounded-2xl bg-[var(--brand-secondary)] border border-brand-border p-3 text-theme-title focus:outline-none focus:border-brand-accent resize-none"
                 />
               </div>
 
@@ -417,7 +417,7 @@ export function AdminServices({
                     }
                     className="rounded text-amber-500 focus:ring-amber-500"
                   />
-                  <span className="text-amber-300 font-semibold">
+                  <span className="text-amber-700 font-semibold">
                     Сложная услуга (запись только через звонок / консультацию мастера)
                   </span>
                 </label>
@@ -443,7 +443,7 @@ export function AdminServices({
 
       {/* Модалка категории */}
       {editingCategory && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-md bg-brand-surface border border-brand-border rounded-3xl p-6 space-y-4 shadow-2xl">
             <h3 className="text-base font-bold text-theme-title">Категория услуг</h3>
             <form onSubmit={handleSaveCategoryForm} className="space-y-3 text-xs">
@@ -457,14 +457,14 @@ export function AdminServices({
                 required
               />
               <div className="space-y-1">
-                <label className="block text-slate-300">Краткое описание</label>
+                <label className="block text-theme-title">Краткое описание</label>
                 <textarea
                   rows={2}
                   value={editingCategory.description || ""}
                   onChange={(e) =>
                     setEditingCategory({ ...editingCategory, description: e.target.value })
                   }
-                  className="w-full rounded-2xl bg-black/40 border border-brand-border p-3 text-theme-title focus:outline-none focus:border-brand-accent resize-none"
+                  className="w-full rounded-2xl bg-[var(--brand-secondary)] border border-brand-border p-3 text-theme-title focus:outline-none focus:border-brand-accent resize-none"
                 />
               </div>
               <div className="pt-2 flex items-center justify-between gap-2 border-t border-brand-border/60">
@@ -512,7 +512,7 @@ export function AdminServices({
     
       {/* Модальное окно быстрого управления всеми категориями */}
       {isCategoryManagerOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in">
           <div className="w-full max-w-lg rounded-3xl bg-brand-surface border border-brand-border p-6 space-y-5 shadow-2xl">
             <div className="flex items-center justify-between border-b border-brand-border pb-3">
               <div>
@@ -544,7 +544,7 @@ export function AdminServices({
                   return (
                     <div
                       key={c.id}
-                      className="p-3.5 rounded-2xl bg-black/30 border border-brand-border flex items-center justify-between gap-3 text-xs"
+                      className="p-3.5 rounded-2xl bg-[var(--brand-secondary)] border border-brand-border flex items-center justify-between gap-3 text-xs"
                     >
                       <div className="space-y-0.5">
                         <div className="font-bold text-theme-title text-sm">{c.title}</div>

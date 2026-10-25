@@ -25,16 +25,14 @@ export function CallMasterModal({
   const [copied, setCopied] = useState(false);
 
   const cleanRaw = (phoneRaw || phone || "").replace(/\D/g, "");
-  const telHref = `tel:+${cleanRaw}`;
+  const telHref = "tel:+" + cleanRaw;
 
   const handleCopyPhone = async () => {
     try {
       await navigator.clipboard.writeText(phone);
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
-    } catch (e) {
-      // Игнорируем ошибку буфера обмена
-    }
+    } catch (e) {}
   };
 
   return (
@@ -43,78 +41,76 @@ export function CallMasterModal({
         type="button"
         size={size}
         onClick={() => setIsOpen(true)}
-        className={`font-bold rounded-2xl shadow-md shadow-brand-accent/20 flex items-center justify-center gap-2 ${className}`}
+        className={"flex items-center justify-center gap-2 " + className}
       >
-        <Phone className="w-4 h-4 text-white" />
+        <Phone className="h-4 w-4" />
         <span>{label}</span>
       </Button>
 
       {isOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="w-full max-w-md bg-brand-surface border border-brand-border rounded-3xl p-6 sm:p-7 space-y-5 shadow-2xl relative">
-            <button
-              onClick={() => setIsOpen(false)}
-              className="absolute top-4 right-4 p-2 rounded-xl text-theme-muted hover:text-theme-title hover:bg-white/5 transition-colors cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-brand-accent/15 border border-brand-accent/30 text-brand-accent flex items-center justify-center shrink-0">
-                <Phone className="w-6 h-6" />
-              </div>
+        <div
+          className="fixed inset-0 z-[60] flex items-end justify-center bg-black/70 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+          onClick={() => setIsOpen(false)}
+          role="presentation"
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="call-master-title"
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md rounded-t-[26px] border border-brand-border bg-brand-surface p-6 shadow-2xl sm:rounded-[26px]"
+          >
+            <div className="flex items-start justify-between gap-4">
               <div>
-                <h3 className="text-lg font-bold text-theme-title">Связь с мастером</h3>
-                <p className="text-xs text-theme-muted">
-                  {serviceTitle ? `Услуга: «${serviceTitle}»` : "Прямая консультация и запись"}
+                <h3 id="call-master-title" className="text-[17px] font-semibold text-theme-title">
+                  Связаться с мастером
+                </h3>
+                <p className="mt-1 text-[12px] leading-relaxed text-theme-muted">
+                  {serviceTitle
+                    ? "Уточним детали по услуге «" + serviceTitle + "»"
+                    : "Подскажем по работам, срокам и стоимости"}
                 </p>
               </div>
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="-mr-1 -mt-1 rounded-full p-2 text-theme-muted transition-colors hover:text-theme-title"
+                aria-label="Закрыть"
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
 
-            <p className="text-xs text-theme-muted leading-relaxed">
-              Данная услуга требует предварительного согласования деталей и объема работ с мастером. Позвоните нам напрямую для моментальной консультации и бронирования бокса:
-            </p>
-
-            {/* Блок с номером телефона */}
-            <div className="p-4 rounded-2xl bg-black/40 border border-brand-border flex items-center justify-between gap-3">
+            <div className="mt-6 flex items-center justify-between gap-3 rounded-2xl border border-brand-border bg-[var(--brand-secondary)] p-4">
               <div>
-                <span className="text-[10px] text-theme-muted uppercase tracking-wider block">
-                  Телефон автоцентра
-                </span>
-                <span className="text-lg sm:text-xl font-black text-theme-title tracking-wide">
-                  {phone}
-                </span>
+                <p className="mono-label">Телефон</p>
+                <p className="mt-1 text-[18px] font-bold tracking-tight text-theme-title">{phone}</p>
               </div>
               <button
                 type="button"
                 onClick={handleCopyPhone}
-                className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-theme-muted hover:text-white border border-white/10 transition-colors cursor-pointer"
+                className="rounded-full border border-brand-border p-2.5 text-theme-muted transition-colors hover:text-theme-title"
                 title="Скопировать номер"
+                aria-label="Скопировать номер"
               >
-                {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
               </button>
             </div>
 
-            {/* Кнопка прямого звонка */}
-            <div className="space-y-2 pt-1">
-              <a href={telHref} className="block w-full">
-                <Button size="lg" className="w-full h-14 rounded-2xl text-base font-bold shadow-xl shadow-brand-accent/25 flex items-center justify-center gap-2">
-                  <Phone className="w-5 h-5" />
-                  <span>Набрать номер мастера</span>
-                </Button>
-              </a>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsOpen(false)}
-                className="w-full text-xs text-theme-muted hover:text-white"
-              >
-                Закрыть
+            <a href={telHref} className="mt-3 block">
+              <Button size="lg" className="h-12 w-full text-sm">
+                <Phone className="h-4 w-4" />
+                Позвонить сейчас
               </Button>
-            </div>
+            </a>
+
+            <p className="mt-3 text-center text-[11px] text-theme-muted">
+              {copied ? "Номер скопирован" : "Номер можно скопировать и набрать вручную"}
+            </p>
           </div>
         </div>
       )}
     </>
   );
 }
+

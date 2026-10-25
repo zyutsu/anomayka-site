@@ -1,9 +1,19 @@
 import { NextResponse } from 'next/server';
-import { exportBookingsToCSV } from '@/lib/db';
+import { exportBookingsToCSV, getDatabaseAsync } from '@/lib/db';
+import { getStaffSession } from '@/lib/auth';
 
-export async function GET() {
+export const dynamic = 'force-dynamic';
+
+export async function GET(req: Request) {
   try {
-    const csvData = exportBookingsToCSV();
+    // Журнал заявок содержит телефоны клиентов — только для сотрудников.
+    const session = getStaffSession(req);
+    if (!session || session.demo) {
+      return NextResponse.json({ error: 'Требуется вход в панель' }, { status: 401 });
+    }
+
+    const db = await getDatabaseAsync();
+    const csvData = exportBookingsToCSV(db);
     const filename = `anomayka-bookings-${new Date().toISOString().split('T')[0]}.csv`;
 
     return new Response(csvData, {

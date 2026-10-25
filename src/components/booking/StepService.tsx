@@ -1,11 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
+import { ArrowLeft, ArrowUpRight, Clock3, Phone } from "lucide-react";
 import { Service, Category } from "@/lib/types";
-import { Clock, Check, ArrowLeft, Star, Phone } from "lucide-react";
 import { formatPrice, formatDuration } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { CallMasterModal } from "@/components/CallMasterModal";
 
 interface StepServiceProps {
@@ -14,6 +13,8 @@ interface StepServiceProps {
   selectedServiceId: string;
   onSelectService: (service: Service) => void;
   onBack: () => void;
+  phone?: string;
+  phoneRaw?: string;
 }
 
 export function StepService({
@@ -22,137 +23,98 @@ export function StepService({
   selectedServiceId,
   onSelectService,
   onBack,
+  phone,
+  phoneRaw,
 }: StepServiceProps) {
-  const [selectedCallService, setSelectedCallService] = useState<Service | null>(null);
-
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <button
-            onClick={onBack}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-theme-muted hover:text-theme-title mb-2 transition-colors cursor-pointer"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" /> Назад к категориям
-          </button>
-          <h2 className="text-xl sm:text-2xl font-bold text-theme-title tracking-tight">
-            Шаг 2. Выберите услугу: {category.title}
-          </h2>
-          <p className="text-sm text-theme-muted mt-1">
-            Длительность и стоимость фиксируются на момент бронирования без скрытых платежей
-          </p>
-        </div>
+    <div className="space-y-7">
+      <div>
+        <button
+          type="button"
+          onClick={onBack}
+          className="mb-3 inline-flex items-center gap-1.5 text-[12px] font-medium text-theme-muted transition-colors hover:text-theme-title"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Назад к направлениям
+        </button>
+        <p className="eyebrow mb-3">Шаг 2 из 5</p>
+        <h2 className="heading text-[clamp(1.5rem,3vw,2rem)] text-theme-title">
+          {category.title}
+        </h2>
+        <p className="mt-2 max-w-xl text-[13px] leading-relaxed text-theme-muted">
+          Цена и длительность фиксируются на момент бронирования.
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid gap-2.5 md:grid-cols-2">
         {services.map((srv) => {
           const isSelected = selectedServiceId === srv.id;
 
           return (
-            <div
+            <article
               key={srv.id}
-              onClick={() => {
-                if (srv.requiresCall) {
-                  setSelectedCallService(srv);
-                } else {
-                  onSelectService(srv);
-                }
-              }}
-              className={`group relative rounded-3xl border cursor-pointer overflow-hidden transition-all duration-300 flex flex-col justify-between shadow-sm ${
-                isSelected
-                  ? "bg-brand-surface border-brand-accent ring-2 ring-brand-accent/25 shadow-xl shadow-brand-accent/10"
-                  : "bg-brand-surface hover:border-brand-accent/50 border-brand-border hover:scale-[1.01]"
-              }`}
+              className={
+                "flex flex-col justify-between gap-4 rounded-2xl border bg-brand-surface p-5 transition-all " +
+                (isSelected ? "border-brand-accent" : "border-brand-border hover:border-brand-accent/40")
+              }
             >
-              {srv.imageUrl && (
-                <div className="relative h-36 w-full overflow-hidden bg-black/40">
-                  <img
-                    src={srv.imageUrl}
-                    alt={srv.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
-                    {srv.isPopular && (
-                      <Badge variant="accent" className="text-[10px] bg-black/70 backdrop-blur-sm">
-                        <Star className="w-3 h-3 fill-brand-accent inline mr-1" />
-                        Хит
-                      </Badge>
-                    )}
-                    {srv.requiresCall && (
-                      <Badge variant="warning" className="text-[10px] bg-black/70 backdrop-blur-sm">
-                        <Phone className="w-3 h-3 inline mr-1" />
-                        По звонку
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
-                <div className="space-y-1">
-                  <h3 className="font-bold text-base text-theme-title group-hover:text-brand-accent transition-colors">
+              <div>
+                <div className="flex items-start justify-between gap-3">
+                  <h3 className="text-[14px] font-semibold leading-snug text-theme-title">
                     {srv.title}
                   </h3>
-                  <p className="text-xs text-theme-muted leading-relaxed line-clamp-2">
-                    {srv.description}
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    {srv.isPopular && <Badge variant="accent">Хит</Badge>}
+                    {srv.requiresCall && <Badge variant="warning">По звонку</Badge>}
+                  </div>
+                </div>
+                <p className="mt-2 line-clamp-2 text-[12px] leading-relaxed text-theme-muted">
+                  {srv.description}
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between gap-3 border-t border-brand-border/70 pt-4">
+                <div>
+                  <p className="text-[16px] font-bold text-theme-title">{formatPrice(srv.price)}</p>
+                  <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-theme-muted">
+                    <Clock3 className="h-3 w-3" />
+                    {formatDuration(srv.durationMinutes)}
                   </p>
                 </div>
 
-                <div className="pt-3 border-t border-brand-border/60 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="font-extrabold text-lg text-theme-title">
-                      {formatPrice(srv.price)}
-                    </span>
-                    <div className="flex items-center gap-1 text-xs text-theme-muted bg-brand-secondary px-2.5 py-1 rounded-xl border border-brand-border">
-                      <Clock className="w-3 h-3 text-brand-accent" />
-                      <span>{formatDuration(srv.durationMinutes)}</span>
-                    </div>
-                  </div>
-
-                  {srv.requiresCall ? (
-                    <span className="text-xs font-bold text-amber-400 flex items-center gap-1">
-                      <Phone className="w-3.5 h-3.5" /> Позвонить мастеру
-                    </span>
-                  ) : (
-                    <div
-                      className={`w-7 h-7 rounded-full flex items-center justify-center border transition-all ${
-                        isSelected
-                          ? "bg-brand-accent border-brand-accent text-white"
-                          : "border-brand-border group-hover:border-brand-accent text-transparent"
-                      }`}
-                    >
-                      <Check className="w-4 h-4" />
-                    </div>
-                  )}
-                </div>
+                {srv.requiresCall ? (
+                  <CallMasterModal
+                    phone={phone || ""}
+                    phoneRaw={phoneRaw}
+                    serviceTitle={srv.title}
+                    label="Уточнить"
+                    className="h-9 px-4 text-[12px]"
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => onSelectService(srv)}
+                    className="inline-flex h-9 items-center gap-1.5 rounded-full bg-[var(--brand-secondary)] px-4 text-[12px] font-semibold text-theme-title transition-colors hover:bg-brand-accent hover:text-white"
+                  >
+                    Выбрать
+                    <ArrowUpRight className="h-3.5 w-3.5" />
+                  </button>
+                )}
               </div>
-            </div>
+            </article>
           );
         })}
-      </div>
 
-      {/* Модалка для услуги, требующей прямого звонка */}
-      {selectedCallService && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
-          <div className="w-full max-w-md bg-brand-surface border border-brand-border rounded-3xl p-6 sm:p-7 space-y-4 shadow-2xl relative">
-            <h3 className="text-lg font-bold text-theme-title">Связь с мастером по услуге</h3>
-            <p className="text-xs text-theme-muted leading-relaxed">
-              Услуга <strong>«{selectedCallService.title}»</strong> относится к сложным или нестандартным работам. Позвоните нашему мастеру напрямую для оперативного согласования деталей и бронирования бокса:
-            </p>
-            <div className="pt-2 flex flex-col sm:flex-row justify-end gap-3">
-              <Button variant="ghost" size="sm" onClick={() => setSelectedCallService(null)}>
-                Назад
-              </Button>
-              <a href="tel:+79990002424" className="w-full sm:w-auto">
-                <Button size="lg" className="w-full font-bold">
-                  <Phone className="w-4 h-4 mr-2" />
-                  Позвонить мастеру
-                </Button>
-              </a>
+        {services.length === 0 && (
+          <div className="rounded-2xl border border-brand-border bg-brand-surface p-8 text-center text-[13px] text-theme-muted md:col-span-2">
+            В этом направлении пока нет активных услуг. Позвоните мастеру — подскажем варианты.
+            <div className="mt-4 flex justify-center">
+              <CallMasterModal phone={phone || ""} phoneRaw={phoneRaw} label="Позвонить" size="sm" />
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
+

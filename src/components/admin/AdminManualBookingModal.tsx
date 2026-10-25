@@ -114,12 +114,12 @@ export function AdminManualBookingModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
       <div className="w-full max-w-lg bg-brand-surface border border-brand-border rounded-3xl p-6 sm:p-7 space-y-5 shadow-2xl relative my-8 animate-in fade-in zoom-in-95 duration-200">
         {/* Кнопка закрытия крестик */}
         <button
           onClick={onClose}
-          className="absolute right-5 top-5 text-slate-400 hover:text-white p-1 rounded-xl bg-white/5 hover:bg-white/10 transition-colors cursor-pointer"
+          className="absolute right-5 top-5 text-theme-muted hover:text-theme-title p-1 rounded-xl bg-[var(--brand-secondary)] hover:bg-brand-accent/10 transition-colors cursor-pointer"
           title="Закрыть"
         >
           <X className="w-5 h-5" />
@@ -141,13 +141,13 @@ export function AdminManualBookingModal({
         </div>
 
         {error && (
-          <div className="p-3 rounded-2xl bg-red-950/40 border border-red-500/40 text-red-300 text-xs font-medium text-center">
+          <div className="p-3 rounded-2xl bg-red-500/10 border border-red-500/40 text-red-300 text-xs font-medium text-center">
             {error}
           </div>
         )}
 
         {successMsg && (
-          <div className="p-3 rounded-2xl bg-emerald-950/40 border border-emerald-500/40 text-emerald-300 text-xs font-semibold text-center flex items-center justify-center gap-2">
+          <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/40 text-emerald-600 text-xs font-semibold text-center flex items-center justify-center gap-2">
             <CheckCircle2 className="w-4 h-4" />
             <span>{successMsg}</span>
           </div>
@@ -155,7 +155,7 @@ export function AdminManualBookingModal({
 
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           {/* 1. Выбор услуги и расчет времени */}
-          <div className="space-y-2 p-3.5 rounded-2xl bg-black/40 border border-brand-border">
+          <div className="space-y-2 p-3.5 rounded-2xl bg-[var(--brand-secondary)] border border-brand-border">
             <label className="block font-bold text-theme-title text-xs">
               1. Выберите услугу
             </label>
@@ -173,7 +173,7 @@ export function AdminManualBookingModal({
 
             {/* Автоматический расчет времени и стоимости */}
             {selectedService && (
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px] text-theme-muted border-t border-white/5">
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px] text-theme-muted border-t border-brand-border">
                 <span className="font-semibold text-brand-accent">
                   Стоимость: {formatPrice(selectedService.price)}
                 </span>
@@ -181,8 +181,8 @@ export function AdminManualBookingModal({
                   Длительность: <strong>{selectedService.durationMinutes} мин</strong>
                 </span>
                 {calculatedEndTime && (
-                  <span className="text-slate-300">
-                    Окно визита: <strong className="text-white font-mono">{time} – {calculatedEndTime}</strong>
+                  <span className="text-theme-title">
+                    Окно визита: <strong className="text-theme-title font-mono">{time} – {calculatedEndTime}</strong>
                   </span>
                 )}
               </div>
@@ -201,7 +201,7 @@ export function AdminManualBookingModal({
                 className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
                   date === todayStr
                     ? "bg-brand-accent border-brand-accent text-white shadow-sm"
-                    : "bg-black/30 border-brand-border text-slate-300 hover:text-white"
+                    : "bg-[var(--brand-secondary)] border-brand-border text-theme-title hover:text-theme-title"
                 }`}
               >
                 Сегодня
@@ -212,7 +212,7 @@ export function AdminManualBookingModal({
                 className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
                   date === tomorrowStr
                     ? "bg-brand-accent border-brand-accent text-white shadow-sm"
-                    : "bg-black/30 border-brand-border text-slate-300 hover:text-white"
+                    : "bg-[var(--brand-secondary)] border-brand-border text-theme-title hover:text-theme-title"
                 }`}
               >
                 Завтра
@@ -223,7 +223,7 @@ export function AdminManualBookingModal({
                 className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
                   date === dayAfterStr
                     ? "bg-brand-accent border-brand-accent text-white shadow-sm"
-                    : "bg-black/30 border-brand-border text-slate-300 hover:text-white"
+                    : "bg-[var(--brand-secondary)] border-brand-border text-theme-title hover:text-theme-title"
                 }`}
               >
                 Послезавтра
@@ -232,7 +232,7 @@ export function AdminManualBookingModal({
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="px-3 py-1.5 rounded-xl bg-black/40 border border-brand-border text-xs text-theme-title focus:outline-none focus:border-brand-accent cursor-pointer"
+                className="px-3 py-1.5 rounded-xl bg-[var(--brand-secondary)] border border-brand-border text-xs text-theme-title focus:outline-none focus:border-brand-accent cursor-pointer"
                 required
               />
             </div>
@@ -259,7 +259,7 @@ export function AdminManualBookingModal({
                   className={`py-1.5 rounded-lg text-xs font-mono font-semibold border transition-all cursor-pointer text-center ${
                     time === t
                       ? "bg-brand-accent border-brand-accent text-white shadow-sm"
-                      : "bg-black/30 border-brand-border text-slate-400 hover:text-white"
+                      : "bg-[var(--brand-secondary)] border-brand-border text-theme-muted hover:text-theme-title"
                   }`}
                 >
                   {t}
@@ -274,7 +274,7 @@ export function AdminManualBookingModal({
                 placeholder="14:30"
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
-                className="w-24 px-2.5 py-1 rounded-lg bg-black/40 border border-brand-border text-xs font-mono text-theme-title text-center focus:outline-none focus:border-brand-accent"
+                className="w-24 px-2.5 py-1 rounded-lg bg-[var(--brand-secondary)] border border-brand-border text-xs font-mono text-theme-title text-center focus:outline-none focus:border-brand-accent"
                 required
               />
             </div>
@@ -316,7 +316,7 @@ export function AdminManualBookingModal({
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               placeholder="Примечание мастера..."
-              className="w-full rounded-2xl bg-black/40 border border-brand-border p-3 text-xs text-theme-title focus:outline-none focus:border-brand-accent resize-none"
+              className="w-full rounded-2xl bg-[var(--brand-secondary)] border border-brand-border p-3 text-xs text-theme-title focus:outline-none focus:border-brand-accent resize-none"
             />
           </div>
 

@@ -5,22 +5,23 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { BrandSettings } from "@/lib/types";
 
 export const COLOR_PRESETS: Record<string, string> = {
-  red: "#ef4444",
-  blue: "#2563eb",
-  emerald: "#10b981",
-  green: "#16a34a",
-  amber: "#f59e0b",
-  gold: "#eab308",
-  purple: "#8b5cf6",
-  violet: "#7c3aed",
-  orange: "#f97316",
-  cyan: "#06b6d4",
-  rose: "#f43f5e",
+  red: "#c8322a",
+  blue: "#1d4ed8",
+  emerald: "#047857",
+  green: "#15803d",
+  amber: "#b45309",
+  gold: "#a16207",
+  purple: "#6d28d9",
+  violet: "#5b21b6",
+  orange: "#c2410c",
+  cyan: "#0e7490",
+  rose: "#be123c",
 };
 
 // Генератор стильного автомобильного логотипа/монограммы для демо-клиентов
 export function generateMonogramLogo(name: string, accentColor: string = "#2563eb"): string {
   const cleanName = (name || "А").trim();
+  const safeAccent = /^#[0-9a-f]{3,8}$/i.test(accentColor) ? accentColor : "#2563eb";
   const words = cleanName.split(/\s+/).filter(Boolean);
   let displayLetters = "А";
 
@@ -37,16 +38,25 @@ export function generateMonogramLogo(name: string, accentColor: string = "#2563e
         <stop offset="100%" stop-color="#08090d"/>
       </linearGradient>
       <linearGradient id="borderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="${accentColor}"/>
-        <stop offset="100%" stop-color="${accentColor}" stop-opacity="0.35"/>
+        <stop offset="0%" stop-color="${safeAccent}"/>
+        <stop offset="100%" stop-color="${safeAccent}" stop-opacity="0.35"/>
       </linearGradient>
     </defs>
     <rect x="6" y="6" width="108" height="108" rx="28" fill="url(#bgGrad)" stroke="url(#borderGrad)" stroke-width="3"/>
-    <rect x="14" y="14" width="92" height="92" rx="20" fill="none" stroke="${accentColor}" stroke-opacity="0.25" stroke-width="1.5"/>
-    <text x="60" y="74" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="${displayLetters.length > 1 ? 38 : 50}" fill="${accentColor}" text-anchor="middle" letter-spacing="-1">${displayLetters}</text>
+    <rect x="14" y="14" width="92" height="92" rx="20" fill="none" stroke="${safeAccent}" stroke-opacity="0.25" stroke-width="1.5"/>
+    <text x="60" y="74" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="${displayLetters.length > 1 ? 38 : 50}" fill="${safeAccent}" text-anchor="middle" letter-spacing="-1">${escapeSvgText(displayLetters)}</text>
   </svg>`;
 
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+/** Экранирование названия в SVG, чтобы логотип не мог сломать разметку. */
+function escapeSvgText(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 // Декодер base64url JSON полезной нагрузки для компактных ссылок
@@ -150,9 +160,14 @@ export function BrandProvider({
       ) {
         return path;
       }
-      const [pathname, search] = path.split("?");
+      // Якоря сохраняем: /#how -> /?demo=...&#how
+      const hashIndex = path.indexOf("#");
+      const hash = hashIndex >= 0 ? path.slice(hashIndex) : "";
+      const withoutHash = hashIndex >= 0 ? path.slice(0, hashIndex) : path;
+      const [pathname, search] = withoutHash.split("?");
+
       if (!search) {
-        return `${pathname}?${demoQuery}`;
+        return `${pathname || "/"}?${demoQuery}${hash}`;
       }
       const existingParams = new URLSearchParams(search);
       const demoParams = new URLSearchParams(demoQuery);
@@ -161,7 +176,7 @@ export function BrandProvider({
           existingParams.set(key, val);
         }
       });
-      return `${pathname}?${existingParams.toString()}`;
+      return `${pathname}?${existingParams.toString()}${hash}`;
     },
     [isDemo, demoQuery]
   );
@@ -519,10 +534,11 @@ export function BrandProvider({
 
     // 1. Акцентный цвет
     if (brand.accentColor) {
-      const accentRgb = hexToRgb(brand.accentColor);
-      root.style.setProperty("--brand-accent", brand.accentColor);
+      const accent = readableAccent(brand.accentColor);
+      const accentRgb = hexToRgb(accent);
+      root.style.setProperty("--brand-accent", accent);
       root.style.setProperty("--brand-accent-rgb", `${accentRgb.r} ${accentRgb.g} ${accentRgb.b}`);
-      root.style.setProperty("--brand-accent-hover", adjustBrightness(brand.accentColor, -18));
+      root.style.setProperty("--brand-accent-hover", adjustBrightness(accent, -18));
     }
 
     // 2. Фон и контраст
@@ -536,16 +552,16 @@ export function BrandProvider({
 
       if (isLight) {
         root.classList.remove("dark");
-        root.classList.add("light");
-        root.style.setProperty("--brand-text", "#0f172a");
+        root.classList.remove("light");
+        root.style.setProperty("--brand-text", "#14171c");
         root.style.setProperty("--brand-text-inverted", "#ffffff");
-        root.style.setProperty("--brand-muted", "#475569");
+        root.style.setProperty("--brand-muted", "#5a616b");
         root.style.setProperty("--brand-surface", "#ffffff");
         root.style.setProperty("--brand-surface-rgb", "255 255 255");
-        root.style.setProperty("--brand-secondary", "#f1f5f9");
-        root.style.setProperty("--brand-border", "rgba(0, 0, 0, 0.12)");
-        root.style.setProperty("--brand-border-subtle", "rgba(0, 0, 0, 0.06)");
-        root.style.setProperty("--brand-header-bg", "rgba(255, 255, 255, 0.92)");
+        root.style.setProperty("--brand-secondary", "#eeece6");
+        root.style.setProperty("--brand-border", "rgba(18, 21, 26, 0.11)");
+        root.style.setProperty("--brand-border-subtle", "rgba(18, 21, 26, 0.065)");
+        root.style.setProperty("--brand-header-bg", "rgba(246, 245, 241, 0.88)");
         root.style.setProperty("--brand-card-bg", "#ffffff");
       } else {
         root.classList.remove("light");
@@ -627,4 +643,30 @@ function adjustBrightness(col: string, percent: number) {
   const g = Math.min(255, Math.max(0, ((num >> 8) & 255) + percent));
   const b = Math.min(255, Math.max(0, (num & 255) + percent));
   return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+}
+
+/** Контраст цвета с белым текстом (WCAG). */
+function contrastWithWhite(hex: string): number {
+  let clean = hex.replace("#", "").trim();
+  if (clean.length === 3) clean = clean.split("").map((c) => c + c).join("");
+  const num = parseInt(clean, 16);
+  if (isNaN(num)) return 0;
+  const channel = (v: number) => {
+    const s = v / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  };
+  const lum =
+    0.2126 * channel((num >> 16) & 255) +
+    0.7152 * channel((num >> 8) & 255) +
+    0.0722 * channel(num & 255);
+  return 1.05 / (lum + 0.05);
+}
+
+/** Затемняет акцент, пока белый текст на кнопке не станет читаемым. */
+function readableAccent(hex: string): string {
+  let color = hex;
+  for (let i = 0; i < 12 && contrastWithWhite(color) < 4.6; i++) {
+    color = adjustBrightness(color, -12);
+  }
+  return color;
 }

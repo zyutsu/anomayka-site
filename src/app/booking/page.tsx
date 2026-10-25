@@ -1,15 +1,18 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Category, Service, Booking, BrandSettings } from "@/lib/types";
+import Link from "next/link";
+import { ArrowLeft, Check } from "lucide-react";
+import { Category, Service, Booking } from "@/lib/types";
 import { StepCategory } from "@/components/booking/StepCategory";
 import { StepService } from "@/components/booking/StepService";
 import { StepDateTime } from "@/components/booking/StepDateTime";
 import { StepClientInfo } from "@/components/booking/StepClientInfo";
 import { StepSuccess } from "@/components/booking/StepSuccess";
-import { Check } from "lucide-react";
 import { useBrand } from "@/context/BrandContext";
+
+const STEPS = ["Услуга", "Детали", "Время", "Контакты", "Готово"];
 
 function BookingContent() {
   const { brand, isDemo } = useBrand();
@@ -21,17 +24,15 @@ function BookingContent() {
   const [services, setServices] = useState<Service[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Состояние шагов мастера
-  const [step, setStep] = useState<number>(1);
+  const [step, setStep] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string>("");
-  const [selectedTime, setSelectedTime] = useState<string>("");
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedTime, setSelectedTime] = useState("");
   const [createdBooking, setCreatedBooking] = useState<Booking | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  // Загрузка начальных данных
   useEffect(() => {
     async function loadData() {
       try {
@@ -40,49 +41,45 @@ function BookingContent() {
           fetch("/api/services"),
         ]);
 
-        if (catsRes.ok && srvsRes.ok) {
-          let catsData: Category[] = await catsRes.json();
-          let srvsData: Service[] = await srvsRes.json();
+        if (!catsRes.ok || !srvsRes.ok) throw new Error("load failed");
 
-          // В демо-режиме подгружаем изолированные категории и услуги текущей вкладки
-          if (isDemo && typeof window !== "undefined") {
-            try {
-              const demoCats = sessionStorage.getItem("anomayka_demo_categories");
-              if (demoCats) catsData = JSON.parse(demoCats);
+        let catsData: Category[] = await catsRes.json();
+        let srvsData: Service[] = await srvsRes.json();
 
-              const demoSrvs = sessionStorage.getItem("anomayka_demo_services");
-              if (demoSrvs) srvsData = JSON.parse(demoSrvs);
-            } catch (e) {}
+        if (isDemo && typeof window !== "undefined") {
+          try {
+            const demoCats = sessionStorage.getItem("anomayka_demo_categories");
+            if (demoCats) catsData = JSON.parse(demoCats);
+            const demoSrvs = sessionStorage.getItem("anomayka_demo_services");
+            if (demoSrvs) srvsData = JSON.parse(demoSrvs);
+          } catch (e) {}
+        }
+
+        catsData = catsData.filter((c) => c.isActive).sort((a, b) => a.order - b.order);
+        srvsData = srvsData.filter((s) => s.isActive);
+
+        setCategories(catsData);
+        setServices(srvsData);
+
+        if (initialSrvId) {
+          const foundSrv = srvsData.find((s) => s.id === initialSrvId);
+          if (foundSrv) {
+            setSelectedCategory(catsData.find((c) => c.id === foundSrv.categoryId) || catsData[0] || null);
+            setSelectedService(foundSrv);
+            setStep(3);
+            return;
           }
+        }
 
-          catsData = catsData.filter((c) => c.isActive);
-          srvsData = srvsData.filter((s) => s.isActive);
-
-          setCategories(catsData);
-          setServices(srvsData);
-
-          // Проверка прямых переходов по query-параметрам
-          if (initialSrvId) {
-            const foundSrv = srvsData.find((s) => s.id === initialSrvId);
-            if (foundSrv) {
-              const foundCat = catsData.find((c) => c.id === foundSrv.categoryId);
-              setSelectedCategory(foundCat || catsData[0]);
-              setSelectedService(foundSrv);
-              setStep(3); // сразу к выбору даты
-              return;
-            }
-          }
-
-          if (initialCatId) {
-            const foundCat = catsData.find((c) => c.id === initialCatId);
-            if (foundCat) {
-              setSelectedCategory(foundCat);
-              setStep(2); // сразу к услугам категории
-            }
+        if (initialCatId) {
+          const foundCat = catsData.find((c) => c.id === initialCatId);
+          if (foundCat) {
+            setSelectedCategory(foundCat);
+            setStep(2);
           }
         }
       } catch (e) {
-        console.error("Ошибка загрузки данных записи:", e);
+        setErrorMessage("Не удалось загрузить каталог. Проверьте соединение и попробуйте ещё раз.");
       } finally {
         setIsLoading(false);
       }
@@ -93,27 +90,9 @@ function BookingContent() {
     return () => window.removeEventListener("anomayka_demo_data_updated", loadData);
   }, [initialCatId, initialSrvId, isDemo]);
 
-  // Плавный скролл наверх страницы при переходе между шагами
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [step]);
-
-  // Обработчики шагов
-  const handleSelectCategory = (cat: Category) => {
-    setSelectedCategory(cat);
-    setStep(2);
-  };
-
-  const handleSelectService = (srv: Service) => {
-    setSelectedService(srv);
-    setStep(3);
-  };
-
-  const handleSelectDateTime = (date: string, time: string) => {
-    setSelectedDate(date);
-    setSelectedTime(time);
-    setStep(4);
-  };
 
   const handleSubmitBooking = async (clientData: {
     clientName: string;
@@ -143,12 +122,8 @@ function BookingContent() {
       });
 
       const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Не удалось создать запись");
 
-      if (!response.ok) {
-        throw new Error(result.error || "Ошибка при сохранении записи");
-      }
-
-      // В демо-режиме сохраняем бронь локально в сессию вкладки
       if (isDemo && typeof window !== "undefined" && result.booking) {
         try {
           const stored = sessionStorage.getItem("anomayka_demo_bookings");
@@ -159,9 +134,9 @@ function BookingContent() {
       }
 
       setCreatedBooking(result.booking);
-      setStep(5); // Переход к экрану успешного подтверждения
+      setStep(5);
     } catch (err: any) {
-      setErrorMessage(err.message || "Не удалось завершить запись");
+      setErrorMessage(err?.message || "Не удалось завершить запись");
     } finally {
       setIsSubmitting(false);
     }
@@ -177,109 +152,135 @@ function BookingContent() {
     setStep(1);
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3 text-slate-400">
-        <div className="w-8 h-8 border-2 border-brand-accent border-t-transparent rounded-full animate-spin" />
-        <span className="text-xs">Загрузка мастера записи...</span>
-      </div>
-    );
-  }
-
-  const stepsList = [
-    { num: 1, title: "Категория" },
-    { num: 2, title: "Услуга" },
-    { num: 3, title: "Время" },
-    { num: 4, title: "Контакты" },
-    { num: 5, title: "Талон" },
-  ];
+  const stepIndex = Math.min(step, 5);
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
-      {/* Шаги (Stepper) */}
-      <div className="relative">
-        <div className="flex items-center justify-between max-w-2xl mx-auto relative z-10">
-          {stepsList.map((s) => {
-            const isCompleted = step > s.num;
-            const isCurrent = step === s.num;
-
-            return (
-              <div key={s.num} className="flex flex-col items-center gap-1.5">
-                <div
-                  className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-xs font-bold transition-all border ${
-                    isCompleted
-                      ? "bg-brand-accent border-brand-accent text-white"
-                      : isCurrent
-                      ? "bg-brand-surface border-brand-accent text-brand-accent ring-4 ring-brand-accent/20"
-                      : "bg-brand-surface border-white/10 text-slate-500"
-                  }`}
-                >
-                  {isCompleted ? <Check className="w-4 h-4" /> : s.num}
-                </div>
-                <span
-                  className={`text-[10px] sm:text-xs font-medium ${
-                    isCurrent ? "text-white font-bold" : "text-slate-500"
-                  }`}
-                >
-                  {s.title}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Фоновая линия прогресса */}
-        <div className="absolute top-4 sm:top-4.5 left-1/2 -translate-x-1/2 w-[70%] max-w-xl h-[2px] bg-white/10 -z-0" />
+    <div className="page-shell pb-16 pt-8 sm:pt-12">
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-[12px] font-medium text-theme-muted transition-colors hover:text-theme-title"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          На главную
+        </Link>
+        <p className="text-[11px] text-theme-muted">
+          {brand.name} · {brand.workHours}
+        </p>
       </div>
 
-      {/* Контейнер текущего шага */}
-      <div className="bg-brand-surface/40 border border-white/5 rounded-3xl p-6 sm:p-10 backdrop-blur-sm shadow-2xl">
-        {step === 1 && (
-          <StepCategory
-            categories={categories}
-            selectedCategoryId={selectedCategory?.id || ""}
-            onSelectCategory={handleSelectCategory}
-          />
-        )}
+      <ol className="mb-8 flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none" aria-label="Этапы записи">
+        {STEPS.map((label, i) => {
+          const n = i + 1;
+          const done = stepIndex > n;
+          const current = stepIndex === n;
+          return (
+            <li key={label} className="flex shrink-0 items-center gap-1">
+              <span
+                className={
+                  "flex items-center gap-2 rounded-full px-2.5 py-1.5 text-[11px] font-medium transition-colors " +
+                  (current
+                    ? "bg-theme-title text-brand-primary"
+                    : done
+                    ? "text-theme-title"
+                    : "text-theme-muted")
+                }
+              >
+                <span
+                  className={
+                    "flex h-5 w-5 items-center justify-center rounded-full border text-[10px] font-bold " +
+                    (done
+                      ? "border-brand-accent bg-brand-accent text-white"
+                      : current
+                      ? "border-transparent bg-brand-primary text-theme-title"
+                      : "border-brand-border text-theme-muted")
+                  }
+                >
+                  {done ? <Check className="h-3 w-3" /> : n}
+                </span>
+                {label}
+              </span>
+              {i < STEPS.length - 1 && <span className="h-px w-3 bg-brand-border sm:w-5" />}
+            </li>
+          );
+        })}
+      </ol>
 
-        {step === 2 && selectedCategory && (
-          <StepService
-            category={selectedCategory}
-            services={services.filter((s) => s.categoryId === selectedCategory.id)}
-            selectedServiceId={selectedService?.id || ""}
-            onSelectService={handleSelectService}
-            onBack={() => setStep(1)}
-          />
-        )}
+      <div className="rounded-[26px] border border-brand-border bg-brand-surface/60 p-5 sm:p-8">
+        {isLoading ? (
+          <div className="flex min-h-[280px] flex-col items-center justify-center gap-3 text-theme-muted">
+            <span className="h-6 w-6 animate-spin rounded-full border-2 border-brand-accent border-t-transparent" />
+            <span className="text-[12px]">Загружаем каталог услуг…</span>
+          </div>
+        ) : errorMessage && !selectedService ? (
+          <div className="py-10 text-center">
+            <p className="text-[13px] text-theme-title">{errorMessage}</p>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="mt-4 rounded-full bg-brand-accent px-5 py-2 text-[12px] font-semibold text-white"
+            >
+              Попробовать снова
+            </button>
+          </div>
+        ) : (
+          <>
+            {step === 1 && (
+              <StepCategory
+                categories={categories}
+                selectedCategoryId={selectedCategory?.id || ""}
+                onSelectCategory={(cat) => {
+                  setSelectedCategory(cat);
+                  setStep(2);
+                }}
+              />
+            )}
 
-        {step === 3 && selectedService && (
-          <StepDateTime
-            service={selectedService}
-            selectedDate={selectedDate}
-            selectedTime={selectedTime}
-            onSelectDateTime={handleSelectDateTime}
-            onBack={() => setStep(2)}
-          />
-        )}
+            {step === 2 && selectedCategory && (
+              <StepService
+                category={selectedCategory}
+                services={services.filter((s) => s.categoryId === selectedCategory.id)}
+                selectedServiceId={selectedService?.id || ""}
+                onSelectService={(srv) => {
+                  setSelectedService(srv);
+                  setStep(3);
+                }}
+                onBack={() => setStep(1)}
+                phone={brand.phone}
+                phoneRaw={brand.phoneRaw}
+              />
+            )}
 
-        {step === 4 && selectedService && (
-          <StepClientInfo
-            service={selectedService}
-            date={selectedDate}
-            time={selectedTime}
-            onSubmit={handleSubmitBooking}
-            onBack={() => setStep(3)}
-            isSubmitting={isSubmitting}
-            errorMessage={errorMessage}
-          />
-        )}
+            {step === 3 && selectedService && (
+              <StepDateTime
+                service={selectedService}
+                selectedDate={selectedDate}
+                selectedTime={selectedTime}
+                onSelectDateTime={(date, time) => {
+                  setSelectedDate(date);
+                  setSelectedTime(time);
+                  setStep(4);
+                }}
+                onBack={() => setStep(2)}
+              />
+            )}
 
-        {step === 5 && createdBooking && brand && (
-          <StepSuccess
-            booking={createdBooking}
-            brand={brand}
-            onReset={handleReset}
-          />
+            {step === 4 && selectedService && (
+              <StepClientInfo
+                service={selectedService}
+                date={selectedDate}
+                time={selectedTime}
+                onSubmit={handleSubmitBooking}
+                onBack={() => setStep(3)}
+                isSubmitting={isSubmitting}
+                errorMessage={errorMessage}
+              />
+            )}
+
+            {step === 5 && createdBooking && (
+              <StepSuccess booking={createdBooking} brand={brand} onReset={handleReset} />
+            )}
+          </>
         )}
       </div>
     </div>
@@ -290,8 +291,8 @@ export default function BookingPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-[60vh] flex items-center justify-center text-slate-400">
-          Загрузка онлайн-записи...
+        <div className="flex min-h-[60vh] items-center justify-center text-[13px] text-theme-muted">
+          Загрузка онлайн-записи…
         </div>
       }
     >
@@ -299,3 +300,4 @@ export default function BookingPage() {
     </Suspense>
   );
 }
+

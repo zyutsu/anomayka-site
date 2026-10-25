@@ -111,7 +111,7 @@ export function AdminPhotos({
       </div>
 
       {savedMessage && (
-        <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center gap-2 animate-in fade-in">
+        <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 text-xs font-semibold flex items-center gap-2 animate-in fade-in">
           <Check className="w-4 h-4" /> {savedMessage}
         </div>
       )}
@@ -130,7 +130,7 @@ export function AdminPhotos({
           {/* Превью */}
           <div className="space-y-1.5">
             <span className="text-xs text-theme-muted block">Текущее превью:</span>
-            <div className="h-32 w-full rounded-2xl border border-brand-border bg-black/40 p-3 flex items-center justify-center overflow-hidden shadow-inner">
+            <div className="h-32 w-full rounded-2xl border border-brand-border bg-[var(--brand-secondary)] p-3 flex items-center justify-center overflow-hidden shadow-inner">
               {logoUrl ? (
                 <img src={logoUrl} alt="Logo" className="max-h-full max-w-full object-contain" />
               ) : (
@@ -168,7 +168,7 @@ export function AdminPhotos({
                   placeholder="https://... или /logo.jpg"
                   value={logoUrl}
                   onChange={(e) => setLogoUrl(e.target.value)}
-                  className="flex-1 h-10 px-3 rounded-xl bg-black/40 border border-brand-border text-xs text-theme-title focus:outline-none focus:border-brand-accent"
+                  className="flex-1 h-10 px-3 rounded-xl bg-[var(--brand-secondary)] border border-brand-border text-xs text-theme-title focus:outline-none focus:border-brand-accent"
                 />
                 <Button size="sm" onClick={handleSaveLogoUrl} className="text-xs">
                   Применить URL
@@ -194,7 +194,7 @@ export function AdminPhotos({
               key={cat.id}
               className="rounded-2xl border border-brand-border bg-brand-surface overflow-hidden space-y-3 p-3 flex flex-col justify-between"
             >
-              <div className="h-32 w-full rounded-xl overflow-hidden bg-black/40 relative">
+              <div className="h-32 w-full rounded-xl overflow-hidden bg-[var(--brand-secondary)] relative">
                 {cat.imageUrl ? (
                   <img src={cat.imageUrl} alt={cat.title} className="w-full h-full object-cover" />
                 ) : (
@@ -244,7 +244,7 @@ export function AdminPhotos({
               className="p-3 rounded-xl bg-brand-secondary border border-brand-border flex items-center justify-between gap-3"
             >
               <div className="flex items-center gap-3">
-                <div className="w-14 h-14 rounded-lg overflow-hidden bg-black/40 shrink-0 border border-brand-border">
+                <div className="w-14 h-14 rounded-lg overflow-hidden bg-[var(--brand-secondary)] shrink-0 border border-brand-border">
                   {srv.imageUrl ? (
                     <img src={srv.imageUrl} alt={srv.title} className="w-full h-full object-cover" />
                   ) : (

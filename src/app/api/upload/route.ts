@@ -1,11 +1,15 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { canManage } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   try {
+    if (!canManage(req)) {
+      return NextResponse.json({ error: 'Требуется вход в панель' }, { status: 401 });
+    }
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
     const oldUrl = formData.get('oldUrl') as string | null;

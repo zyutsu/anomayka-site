@@ -1,105 +1,93 @@
-import { NextResponse } from 'next/server';
-import { getDatabase, getDatabaseAsync } from '@/lib/db';
+import { NextResponse } from "next/server";
+import { resolveLead, originFromRequest } from "@/lib/lead-links";
+import { fullPitch, demoUrl } from "@/lib/pitch";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+const escapeHtml = (value: string) =>
+  value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 
 export async function GET(
   req: Request,
-  props: { params: Promise<{ slug: string }> | { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const resolvedParams = await Promise.resolve(props.params);
-    const rawSlug = resolvedParams?.slug || '';
-    const cleanSlug = decodeURIComponent(rawSlug).toLowerCase().trim();
+    const { slug } = await params;
+    const lead = await resolveLead(slug);
+    const link = demoUrl(originFromRequest(req), lead.slug);
+    const text = fullPitch(lead, link);
 
-    let db = getDatabase();
-    let found = db.shortLinks?.find((l) => l.slug.toLowerCase() === cleanSlug);
+    const tgUrl = lead.phoneRaw
+      ? "tg://resolve?phone=" + lead.phoneRaw + "&text=" + encodeURIComponent(text)
+      : "https://t.me/share/url?url=" + encodeURIComponent(link) + "&text=" + encodeURIComponent(text);
 
-    if (!found) {
-      try {
-        const asyncDb = await Promise.race([
-          getDatabaseAsync(),
-          new Promise<any>((_, reject) => setTimeout(() => reject(new Error('timeout')), 1200)),
-        ]);
-        found = asyncDb?.shortLinks?.find((l: any) => l.slug.toLowerCase() === cleanSlug);
-      } catch (e) {}
-    }
-
-    let phone = '';
-    let name = 'Автосервис';
-    let city = '';
-
-    if (found?.url) {
-      try {
-        const urlObj = new URL(found.url, 'http://localhost:3000');
-        phone = urlObj.searchParams.get('phone') || '';
-        name = urlObj.searchParams.get('name') || name;
-        city = urlObj.searchParams.get('city') || '';
-      } catch (e) {}
-    }
-
-    let cleanPhone = phone.replace(/\D/g, '');
-    if (cleanPhone.startsWith('8') && cleanPhone.length === 11) {
-      cleanPhone = '7' + cleanPhone.slice(1);
-    }
-
-    const shortUrl = `https://vibe-rho-bay.vercel.app/d/${cleanSlug}`;
-    const targetName = name.toLowerCase() !== 'автосервис' && name.toLowerCase() !== 'сто' ? `«${name}»` : (city ? `в г. ${city}` : '');
-    
-    // Полный подробный текст со всеми правками и примечанием про VPN
-    const pitchText = `Здравствуйте!\n\nОбратил внимание на ваш автосервис ${targetName}. Решил не писать длинных предложений, а сразу показать на деле — собрал для вас готовый рабочий сайт с онлайн-записью клиентов, каталогом услуг и точкой на Яндекс.Картах:\n\n👉 ${shortUrl}\n\nСайт полностью адаптирован под смартфоны: клиенты могут в пару кликов выбрать услугу, узнать стоимость и записаться на конкретное время без лишних звонков мастеру.\n\nЕстественно, это демонстрационный образец — мы можем внести абсолютно любые правки под вас: скорректировать цены и список услуг, поменять дизайн, цвета, поставить ваш реальный логотип и добавить фото боксов.\n\nВзгляните с телефона пару минут. Если идея понравится — всё доработаем и запустим буквально за 1 день. Как вам такой концепт?\n\n(P.S. Если ссылка сразу не откроется — включите, пожалуйста, VPN, тестовый сервер пока зарубежный 🤝)`;
-
-    const tgProtocolUrl = cleanPhone 
-      ? `tg://resolve?phone=${cleanPhone}&text=${encodeURIComponent(pitchText)}`
-      : `https://t.me/share/url?url=${encodeURIComponent(shortUrl)}&text=${encodeURIComponent(pitchText)}`;
-
-    // Отдаем HTML-шлюз с моментальным переходом прямо в чат Telegram без пересыла
-    const html = `<!DOCTYPE html>
-<html lang="ru">
-<head>
-  <meta charset="UTF-8">
-  <title>Открытие чата Telegram — ${name}</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; }
-    .card { background: #1e293b; border: 1px solid #334155; border-radius: 24px; padding: 32px; max-width: 480px; width: 100%; text-align: center; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
-    h1 { font-size: 20px; margin-bottom: 8px; color: #fff; }
-    p { font-size: 14px; color: #94a3b8; line-height: 1.5; margin-bottom: 24px; }
-    .btn { display: block; width: 100%; padding: 14px; border-radius: 14px; font-weight: bold; text-decoration: none; margin-bottom: 12px; font-size: 15px; box-sizing: border-box; cursor: pointer; border: none; }
-    .btn-tg { background: #0284c7; color: #fff; }
-    .btn-tg:hover { background: #0369a1; }
-    .badge { display: inline-block; padding: 6px 14px; background: rgba(16, 185, 129, 0.15); color: #34d399; border-radius: 999px; font-size: 12px; font-weight: bold; margin-bottom: 16px; border: 1px solid rgba(16, 185, 129, 0.3); }
-    .msg-preview { background: #0b1120; border: 1px solid #1e293b; border-radius: 12px; padding: 12px; font-size: 12px; color: #cbd5e1; text-align: left; white-space: pre-wrap; margin-bottom: 20px; max-height: 140px; overflow-y: auto; }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <div id="copyBadge" class="badge">Текст сообщения готов</div>
-    <h1>${name}</h1>
-    <p>Открываем диалог в Telegram. Текст сообщения уже подставлен, а также скопирован в буфер (Ctrl+V) на случай блокировок браузера!</p>
-    
-    <div class="msg-preview">${pitchText}</div>
-
-    <a href="${tgProtocolUrl}" class="btn btn-tg" id="tgBtn">👉 Открыть чат в Telegram</a>
-  </div>
-
-  <script>
-    const textToCopy = ${JSON.stringify(pitchText)};
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(textToCopy).catch(() => {});
-    }
-    // Моментальный автопереход прямо в чат Telegram
-    window.location.href = ${JSON.stringify(tgProtocolUrl)};
-  </script>
-</body>
-</html>`;
+    const html = [
+      "<!DOCTYPE html>",
+      '<html lang="ru">',
+      "<head>",
+      '<meta charset="UTF-8">',
+      '<meta name="viewport" content="width=device-width, initial-scale=1.0">',
+      "<title>Сообщение для " + escapeHtml(lead.name) + "</title>",
+      "<style>",
+      "  :root{color-scheme:dark}",
+      "  *{box-sizing:border-box}",
+      '  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:#0a0b0d;color:#f6f6f4;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}',
+      "  .card{width:100%;max-width:460px;background:#111317;border:1px solid rgba(255,255,255,.09);border-radius:24px;padding:28px;box-shadow:0 30px 80px -40px #000}",
+      "  .badge{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#34d399;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);border-radius:999px;padding:6px 11px}",
+      "  h1{font-size:19px;line-height:1.25;letter-spacing:-.02em;margin:18px 0 6px}",
+      "  p{font-size:13px;line-height:1.6;color:#9aa0a8;margin:0}",
+      "  .preview{margin:20px 0;padding:14px;border-radius:14px;background:#0a0b0d;border:1px solid rgba(255,255,255,.07);font-size:12px;line-height:1.6;color:#c9cdd3;white-space:pre-wrap;max-height:168px;overflow:auto}",
+      "  .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:48px;border:0;border-radius:999px;background:#2aabee;color:#fff;font-size:14px;font-weight:700;text-decoration:none;cursor:pointer}",
+      "  .btn.secondary{margin-top:9px;background:#15171c;border:1px solid rgba(255,255,255,.1);color:#f6f6f4}",
+      "  .hint{margin-top:12px;text-align:center;font-size:11px;color:#737a83}",
+      "  .logo{width:44px;height:44px;border-radius:12px;object-fit:contain;background:#0a0b0d;border:1px solid rgba(255,255,255,.1);padding:4px}",
+      "  .head{display:flex;align-items:center;gap:12px}",
+      "</style>",
+      "</head>",
+      "<body>",
+      '<main class="card">',
+      '<div class="badge">Сообщение готово</div>',
+      '<div class="head" style="margin-top:18px">',
+      lead.logo
+        ? '<img class="logo" src="' + escapeHtml(lead.logo) + '" alt="">'
+        : '<div class="logo"></div>',
+      "<div>",
+      "<h1>" + escapeHtml(lead.name) + "</h1>",
+      "<p>" + escapeHtml([lead.city, lead.phone].filter(Boolean).join(" · ")) + "</p>",
+      "</div>",
+      "</div>",
+      '<p style="margin-top:16px">Откроем чат с клиентом. Если текст не подставится сам — нажмите «Скопировать текст» и вставьте его в поле ввода.</p>',
+      '<div class="preview">' + escapeHtml(text) + "</div>",
+      '<a class="btn" href="' + escapeHtml(tgUrl) + '" id="tg">Показать клиенту его будущий сайт</a>',
+      '<button class="btn secondary" type="button" id="copy">Скопировать текст</button>',
+      '<p class="hint" id="hint">Telegram не открылся? Скопируйте текст и отправьте его вручную.</p>',
+      "</main>",
+      "<script>",
+      "  var text = " + JSON.stringify(text) + ";",
+      "  function copy(){ if(navigator.clipboard){ navigator.clipboard.writeText(text).then(function(){ document.getElementById('hint').textContent='Текст скопирован'; }); } }",
+      "  copy();",
+      "  document.getElementById('copy').addEventListener('click', function(e){ e.preventDefault(); copy(); });",
+      "  setTimeout(function(){ window.location.href = " + JSON.stringify(tgUrl) + "; }, 700);",
+      "</script>",
+      "</body>",
+      "</html>",
+    ].join("\n");
 
     return new NextResponse(html, {
       status: 200,
-      headers: { 'Content-Type': 'text/html; charset=utf-8' },
+      headers: {
+        "Content-Type": "text/html; charset=utf-8",
+        "Cache-Control": "no-store",
+      },
     });
   } catch (err) {
-    return NextResponse.redirect(new URL('/', req.url), 307);
+    console.error("Telegram gateway error:", err);
+    return NextResponse.redirect(new URL("/", req.url), 307);
   }
 }
+

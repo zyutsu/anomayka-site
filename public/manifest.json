@@ -4,8 +4,8 @@
   "description": "Онлайн-запись на автосервис, ТО, диагностику и детейлинг за 2 минуты без звонков",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#090a0f",
-  "theme_color": "#e11d48",
+  "background_color": "#f6f5f1",
+  "theme_color": "#c8322a",
   "orientation": "portrait-primary",
   "icons": [
     {

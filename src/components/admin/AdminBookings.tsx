@@ -132,7 +132,7 @@ export function AdminBookings({
       case "new":
         return <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30">Новая</span>;
       case "confirmed":
-        return <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">Подтверждена</span>;
+        return <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-600 border border-emerald-500/30">Подтверждена</span>;
       case "completed":
         return <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sky-500/15 text-sky-400 border border-sky-500/30">Выполнена</span>;
       case "cancelled":
@@ -148,14 +148,14 @@ export function AdminBookings({
       <div className="flex flex-col gap-3">
         {/* Быстрые переключатели периода */}
         <div className="flex flex-wrap items-center justify-between gap-3 bg-brand-surface p-3 rounded-2xl border border-brand-border">
-          <div className="flex items-center gap-1.5 p-1 bg-black/40 rounded-xl border border-brand-border">
+          <div className="flex items-center gap-1.5 p-1 bg-[var(--brand-secondary)] rounded-xl border border-brand-border">
             <button
               type="button"
               onClick={() => { setPeriodPreset("week"); setDateFilter(""); }}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 periodPreset === "week" && !dateFilter
                   ? "bg-brand-accent text-white shadow-sm"
-                  : "text-slate-400 hover:text-white"
+                  : "text-theme-muted hover:text-theme-title"
               }`}
             >
               За последние 7 дней (по умолчанию)
@@ -166,7 +166,7 @@ export function AdminBookings({
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 periodPreset === "today" && !dateFilter
                   ? "bg-brand-accent text-white shadow-sm"
-                  : "text-slate-400 hover:text-white"
+                  : "text-theme-muted hover:text-theme-title"
               }`}
             >
               Сегодня
@@ -177,7 +177,7 @@ export function AdminBookings({
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 periodPreset === "all" && !dateFilter
                   ? "bg-brand-accent text-white shadow-sm"
-                  : "text-slate-400 hover:text-white"
+                  : "text-theme-muted hover:text-theme-title"
               }`}
             >
               Все даты ({bookings.length})
@@ -213,14 +213,14 @@ export function AdminBookings({
               placeholder="Поиск по имени, тел, авто, коду..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 rounded-2xl bg-black/40 border border-brand-border text-xs text-theme-title placeholder:text-slate-500 focus:outline-none focus:border-brand-accent"
+              className="w-full pl-9 pr-4 py-2.5 rounded-2xl bg-[var(--brand-secondary)] border border-brand-border text-xs text-theme-title placeholder:text-theme-muted focus:outline-none focus:border-brand-accent"
             />
           </div>
 
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full sm:w-auto px-3.5 py-2.5 rounded-2xl bg-black/40 border border-brand-border text-xs text-theme-title focus:outline-none focus:border-brand-accent"
+            className="w-full sm:w-auto px-3.5 py-2.5 rounded-2xl bg-[var(--brand-secondary)] border border-brand-border text-xs text-theme-title focus:outline-none focus:border-brand-accent"
           >
             <option value="all">Все статусы</option>
             <option value="call_requested">⚠️ Требуют звонка мастера</option>
@@ -234,7 +234,7 @@ export function AdminBookings({
             type="date"
             value={dateFilter}
             onChange={(e) => setDateFilter(e.target.value)}
-            className="w-full sm:w-auto px-3.5 py-2.5 rounded-2xl bg-black/40 border border-brand-border text-xs text-theme-title focus:outline-none focus:border-brand-accent"
+            className="w-full sm:w-auto px-3.5 py-2.5 rounded-2xl bg-[var(--brand-secondary)] border border-brand-border text-xs text-theme-title focus:outline-none focus:border-brand-accent"
             title="Выбрать конкретную дату"
           />
 
@@ -279,12 +279,12 @@ export function AdminBookings({
                       </span>
                     )}
                     {b.date === tomorrowStr && (
-                      <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 font-bold text-[10px]">
+                      <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-600 font-bold text-[10px]">
                         Завтра
                       </span>
                     )}
                     {b.date === yesterdayStr && (
-                      <span className="px-1.5 py-0.5 rounded-md bg-slate-500/20 text-slate-400 font-bold text-[10px]">
+                      <span className="px-1.5 py-0.5 rounded-md bg-slate-500/20 text-theme-muted font-bold text-[10px]">
                         Вчера
                       </span>
                     )}
@@ -354,7 +354,7 @@ export function AdminBookings({
                   {/* Кнопка быстрого звонка */}
                   <a href={`tel:${b.clientPhone}`}>
                     <Button size="sm" variant="secondary" className="h-8 px-3 text-xs gap-1">
-                      <Phone className="w-3 h-3 text-emerald-400" />
+                      <Phone className="w-3 h-3 text-emerald-600" />
                       <span>Позвонить</span>
                     </Button>
                   </a>
@@ -399,23 +399,23 @@ export function AdminBookings({
 
       {/* Модальное окно ручной записи */}
       {showManualModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-md bg-brand-surface border border-brand-border rounded-3xl p-6 space-y-4 shadow-2xl">
             <h3 className="text-base font-bold text-theme-title">Новая запись по телефону</h3>
 
             {manualError && (
-              <div className="p-3 rounded-xl bg-red-950/40 border border-red-500/40 text-red-300 text-xs">
+              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/40 text-red-300 text-xs">
                 {manualError}
               </div>
             )}
 
             <form onSubmit={handleManualSubmit} className="space-y-3 text-xs">
               <div>
-                <label className="block text-slate-300 mb-1">Услуга</label>
+                <label className="block text-theme-title mb-1">Услуга</label>
                 <select
                   value={manualForm.serviceId}
                   onChange={(e) => setManualForm({ ...manualForm, serviceId: e.target.value })}
-                  className="w-full h-10 px-3 rounded-2xl bg-black/40 border border-brand-border text-theme-title focus:outline-none focus:border-brand-accent"
+                  className="w-full h-10 px-3 rounded-2xl bg-[var(--brand-secondary)] border border-brand-border text-theme-title focus:outline-none focus:border-brand-accent"
                 >
                   {services.map((s) => (
                     <option key={s.id} value={s.id}>
@@ -481,7 +481,7 @@ export function AdminBookings({
 
       {/* Модалка заметки */}
       {noteModalBooking && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-sm bg-brand-surface border border-brand-border rounded-3xl p-5 space-y-3 shadow-2xl">
             <h4 className="font-bold text-theme-title text-sm">Служебная заметка к записи {noteModalBooking.code}</h4>
             <textarea
@@ -489,7 +489,7 @@ export function AdminBookings({
               value={noteText}
               onChange={(e) => setNoteText(e.target.value)}
               placeholder="Например: Пост №1, мастер Сергей, клиент просил проверить колодки"
-              className="w-full rounded-2xl bg-black/40 border border-brand-border p-3 text-xs text-theme-title focus:outline-none focus:border-brand-accent resize-none"
+              className="w-full rounded-2xl bg-[var(--brand-secondary)] border border-brand-border p-3 text-xs text-theme-title focus:outline-none focus:border-brand-accent resize-none"
             />
             <div className="flex justify-end gap-2 pt-1">
               <Button size="sm" variant="ghost" onClick={() => setNoteModalBooking(null)}>

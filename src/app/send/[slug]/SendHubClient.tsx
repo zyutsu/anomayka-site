@@ -1,21 +1,15 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { 
-  Send, 
-  MessageSquare, 
-  Copy, 
-  Check, 
-  ExternalLink, 
-  Sparkles, 
-  Phone, 
-  MapPin, 
-  CheckCircle2, 
-  Share2,
-  AlertCircle
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import React, { useEffect, useState } from "react";
+import {
+  ArrowUpRight,
+  Check,
+  Copy,
+  MessageSquare,
+  Send,
+  Smartphone,
+  Sparkles,
+} from "lucide-react";
 
 interface SendHubClientProps {
   slug: string;
@@ -42,219 +36,173 @@ export default function SendHubClient({
   safePitch,
   fullPitch,
 }: SendHubClientProps) {
-  const [copiedType, setCopiedType] = useState<'safe' | 'full' | null>(null);
-  const [pitchMode, setPitchMode] = useState<'safe' | 'full'>('safe');
+  const [mode, setMode] = useState<"safe" | "full">("safe");
+  const [copied, setCopied] = useState<"safe" | "full" | null>(null);
+  const [origin, setOrigin] = useState("");
 
-  const currentPitch = pitchMode === 'safe' ? safePitch : fullPitch;
-
-  // Автоматическое копирование при открытии страницы
   useEffect(() => {
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(safePitch).then(() => {
-        setCopiedType('safe');
-        setTimeout(() => setCopiedType(null), 3000);
-      }).catch(() => {});
-    }
-  }, [safePitch]);
+    setOrigin(window.location.origin);
+  }, []);
 
-  const handleCopy = async (type: 'safe' | 'full') => {
+  const absoluteShort = (origin || "") + shortUrl;
+  const rawPitch = mode === "safe" ? safePitch : fullPitch;
+  // В тексте для мессенджера всегда нужна полная ссылка, а не путь /d/slug.
+  const pitch = origin ? rawPitch.split(shortUrl).join(absoluteShort) : rawPitch;
+
+  const copy = async (value: string) => {
     try {
-      const textToCopy = type === 'safe' ? safePitch : fullPitch;
-      await navigator.clipboard.writeText(textToCopy);
-      setCopiedType(type);
-      setTimeout(() => setCopiedType(null), 3000);
+      await navigator.clipboard.writeText(value);
     } catch (e) {
-      // Fallback
-      const ta = document.createElement('textarea');
-      ta.value = type === 'safe' ? safePitch : fullPitch;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
-      setCopiedType(type);
-      setTimeout(() => setCopiedType(null), 3000);
+      const area = document.createElement("textarea");
+      area.value = value;
+      area.style.position = "fixed";
+      area.style.opacity = "0";
+      document.body.appendChild(area);
+      area.select();
+      document.execCommand("copy");
+      document.body.removeChild(area);
     }
+    setCopied(mode);
+    setTimeout(() => setCopied(null), 2500);
   };
 
-  // WhatsApp ссылки
-  const waDirectUrl = cleanPhone 
-    ? `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(currentPitch)}`
-    : `https://api.whatsapp.com/send?text=${encodeURIComponent(currentPitch)}`;
-
-  const waWebUrl = cleanPhone
-    ? `https://web.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(currentPitch)}`
-    : `https://web.whatsapp.com/send?text=${encodeURIComponent(currentPitch)}`;
-
-  // Telegram ссылки
-  const tgDirectUrl = cleanPhone ? `tg://resolve?phone=${cleanPhone}` : `https://t.me/share/url?url=${encodeURIComponent(shortUrl)}&text=${encodeURIComponent(currentPitch)}`;
-  const tgShareUrl = `https://t.me/share/url?url=${encodeURIComponent(shortUrl)}&text=${encodeURIComponent(currentPitch)}`;
+  const waUrl = cleanPhone
+    ? "https://api.whatsapp.com/send?phone=" + cleanPhone + "&text=" + encodeURIComponent(pitch)
+    : "https://api.whatsapp.com/send?text=" + encodeURIComponent(pitch);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-4 sm:p-6 selection:bg-rose-500 selection:text-white">
-      <div className="w-full max-w-xl bg-slate-900/90 border border-slate-800 rounded-3xl p-5 sm:p-8 shadow-2xl backdrop-blur-xl space-y-6">
-        
-        {/* Шапка карточки автосервиса */}
-        <div className="flex items-start gap-4 pb-4 border-b border-slate-800">
+    <div className="mx-auto w-full max-w-2xl px-4 py-10 sm:py-14">
+      <div className="mb-6 flex items-center justify-between gap-4">
+        <p className="mono-label">Хаб отправки · {slug}</p>
+        <a
+          href={absoluteShort}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-[12px] font-medium text-theme-muted transition-colors hover:text-theme-title"
+        >
+          Посмотреть демо
+          <ArrowUpRight className="h-3.5 w-3.5" />
+        </a>
+      </div>
+
+      <div className="overflow-hidden rounded-[26px] border border-brand-border bg-brand-surface">
+        <div className="flex items-center gap-4 border-b border-brand-border p-5">
           {logo ? (
-            <div className="w-16 h-16 rounded-2xl overflow-hidden bg-slate-800 flex-shrink-0 border border-slate-700">
-              <img src={logo} alt={name} className="w-full h-full object-cover" />
-            </div>
+            <img
+              src={logo}
+              alt={name}
+              className="h-14 w-14 shrink-0 rounded-2xl border border-brand-border bg-[var(--brand-secondary)] object-contain p-1"
+            />
           ) : (
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center font-bold text-2xl text-white flex-shrink-0 shadow-lg">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-brand-border bg-[var(--brand-secondary)] text-lg font-bold text-brand-accent">
               {name.charAt(0)}
             </div>
           )}
-
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-rose-500/20 text-rose-400 border border-rose-500/30">
-                Хаб отправки
-              </span>
-              {copiedType && (
-                <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 animate-fade-in">
-                  <Check className="w-3 h-3 stroke-[3]" />
-                  Текст в буфере!
-                </span>
-              )}
-            </div>
-            <h1 className="text-xl sm:text-2xl font-black text-white truncate mt-1">
-              {name}
-            </h1>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400 mt-1">
-              {city && (
-                <span className="flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5 text-slate-500" />
-                  {city}
-                </span>
-              )}
-              {phone && (
-                <span className="flex items-center gap-1 font-mono text-slate-300">
-                  <Phone className="w-3.5 h-3.5 text-slate-500" />
-                  {phone}
-                </span>
-              )}
-            </div>
+          <div className="min-w-0">
+            <h1 className="truncate text-[18px] font-bold tracking-tight text-theme-title">{name}</h1>
+            <p className="truncate text-[12px] text-theme-muted">
+              {[city, phone].filter(Boolean).join(" · ") || address}
+            </p>
           </div>
         </div>
 
-        {/* Уведомление о буфере обмена */}
-        <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-start gap-3">
-          <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
-          <div className="text-xs text-emerald-200 leading-relaxed">
-            <span className="font-bold text-emerald-300">Сообщение уже скопировано в буфер!</span> Если при открытии чата WhatsApp/Telegram строка сообщения останется пустой — просто нажмите <kbd className="px-1.5 py-0.5 bg-black/40 rounded border border-emerald-500/30 font-mono text-white">Ctrl+V</kbd> или «Вставить».
-          </div>
-        </div>
-
-        {/* Главные кнопки мгновенной отправки */}
-        <div className="space-y-3">
-          <div className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            <span>Действия в 1 клик:</span>
+        <div className="space-y-5 p-5 sm:p-6">
+          <div className="flex items-start gap-2.5 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.07] px-4 py-3">
+            <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+            <p className="text-[12px] leading-relaxed text-theme-title">
+              Текст с персональной ссылкой готов. Откройте WhatsApp или Telegram —
+              вставьте сообщение и отправьте в один клик.
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {/* WhatsApp */}
+          <div className="grid gap-2 sm:grid-cols-2">
             <a
-              href={waDirectUrl}
+              href={waUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full flex items-center justify-center gap-2.5 px-4 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold shadow-lg shadow-emerald-950/40 border border-emerald-500/30 transition-all"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-emerald-600 text-[13px] font-semibold text-white transition-colors hover:bg-emerald-500"
             >
-              <MessageSquare className="w-5 h-5" />
-              <span>Открыть в WhatsApp</span>
+              <MessageSquare className="h-4 w-4" />
+              Написать клиенту в WhatsApp
             </a>
-
-            {/* Telegram */}
             <a
-              href={tgDirectUrl}
-              className="w-full flex items-center justify-center gap-2.5 px-4 py-3.5 rounded-2xl bg-sky-600 hover:bg-sky-500 active:scale-95 text-white font-bold shadow-lg shadow-sky-950/40 border border-sky-500/30 transition-all"
+              href={"/tg/" + slug}
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-[#229ED9] text-[13px] font-semibold text-white transition-colors hover:bg-[#1b8dc4]"
             >
-              <Send className="w-5 h-5" />
-              <span>Открыть в Telegram</span>
+              <Send className="h-4 w-4" />
+              Отправить демо в Telegram
             </a>
           </div>
 
-          {/* Дополнительные действия */}
-          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="grid gap-2 sm:grid-cols-2">
             <button
-              onClick={() => handleCopy(pitchMode)}
-              className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 font-semibold transition-all"
+              type="button"
+              onClick={() => copy(pitch)}
+              className="inline-flex h-10 items-center justify-center gap-1.5 rounded-full border border-brand-border text-[12px] font-medium text-theme-title transition-colors hover:border-brand-accent/50"
             >
-              {copiedType ? (
-                <>
-                  <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[3]" />
-                  <span className="text-emerald-300">Скопировано!</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Скопировать текст</span>
-                </>
-              )}
+              {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+              {copied ? "Скопировано" : "Скопировать текст"}
             </button>
-
             <a
-              href={tgShareUrl}
+              href={"/tg/" + slug}
+              className="inline-flex h-10 items-center justify-center gap-1.5 rounded-full border border-brand-border text-[12px] font-medium text-theme-title transition-colors hover:border-brand-accent/50"
+            >
+              <Smartphone className="h-3.5 w-3.5" />
+              Открыть чат в Telegram
+            </a>
+          </div>
+
+          <div className="border-t border-brand-border pt-4">
+            <div className="mb-2.5 flex items-center justify-between gap-3">
+              <p className="text-[12px] font-medium text-theme-title">Текст сообщения</p>
+              <div className="flex rounded-full border border-brand-border p-0.5 text-[11px]">
+                <button
+                  type="button"
+                  onClick={() => setMode("safe")}
+                  className={
+                    "rounded-full px-3 py-1 font-medium transition-colors " +
+                    (mode === "safe" ? "bg-theme-title text-brand-primary" : "text-theme-muted")
+                  }
+                >
+                  Короткий
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMode("full")}
+                  className={
+                    "rounded-full px-3 py-1 font-medium transition-colors " +
+                    (mode === "full" ? "bg-theme-title text-brand-primary" : "text-theme-muted")
+                  }
+                >
+                  Полный
+                </button>
+              </div>
+            </div>
+
+            <div
+              onClick={() => copy(pitch)}
+              className="max-h-[260px] cursor-pointer overflow-y-auto whitespace-pre-wrap rounded-2xl border border-brand-border bg-[var(--brand-primary)] p-4 text-[12px] leading-relaxed text-theme-muted"
+              title="Нажмите, чтобы скопировать"
+            >
+              {pitch}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-brand-border pt-4 text-[12px]">
+            <span className="text-theme-muted">Персональный сайт</span>
+            <a
+              href={absoluteShort}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 font-semibold transition-all"
+              className="inline-flex items-center gap-1 font-semibold text-brand-accent"
             >
-              <Share2 className="w-3.5 h-3.5 text-slate-400" />
-              <span>Поделиться текстом</span>
+              {slug}
+              <ArrowUpRight className="h-3.5 w-3.5" />
             </a>
           </div>
         </div>
-
-        {/* Текст сообщения для копирования */}
-        <div className="space-y-2 pt-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400">Текст сообщения:</span>
-            <div className="flex items-center gap-1 bg-slate-800 p-0.5 rounded-lg border border-slate-700 text-[11px]">
-              <button
-                onClick={() => setPitchMode('safe')}
-                className={`px-2 py-0.5 rounded-md font-semibold transition-colors ${
-                  pitchMode === 'safe' ? 'bg-rose-500 text-white' : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                Короткое (быстрое)
-              </button>
-              <button
-                onClick={() => setPitchMode('full')}
-                className={`px-2 py-0.5 rounded-md font-semibold transition-colors ${
-                  pitchMode === 'full' ? 'bg-rose-500 text-white' : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                Полное
-              </button>
-            </div>
-          </div>
-
-          <div 
-            onClick={() => handleCopy(pitchMode)}
-            className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 text-xs sm:text-sm text-slate-300 leading-relaxed whitespace-pre-line font-sans cursor-pointer hover:border-slate-700 transition-colors relative group select-all"
-          >
-            {currentPitch}
-            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800/90 px-2 py-1 rounded text-[10px] text-slate-300 border border-slate-700 flex items-center gap-1">
-              <Copy className="w-3 h-3" />
-              <span>Кликните для копирования</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Кнопка перехода на персональный сайт */}
-        <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs">
-          <span className="text-slate-500">Персональный сайт автосервиса:</span>
-          <Link
-            href={shortUrl}
-            target="_blank"
-            className="flex items-center gap-1.5 text-blue-400 hover:text-blue-300 font-bold transition-colors"
-          >
-            <span>Открыть демо-сайт</span>
-            <ExternalLink className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-
       </div>
     </div>
   );
 }
+

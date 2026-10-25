@@ -1,12 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import { ArrowUpRight, Clock3 } from "lucide-react";
 import { Service } from "@/lib/types";
 import { useBrand } from "@/context/BrandContext";
-import { ChevronRight } from "lucide-react";
 import { formatPrice, formatDuration } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 
 export function HomePopularServices({ initialServices }: { initialServices: Service[] }) {
   const { isDemo, getDemoHref } = useBrand();
@@ -18,8 +17,7 @@ export function HomePopularServices({ initialServices }: { initialServices: Serv
         try {
           const demoSrvs = sessionStorage.getItem("anomayka_demo_services");
           if (demoSrvs) {
-            const parsed: Service[] = JSON.parse(demoSrvs);
-            setServices(parsed.filter((s) => s.isActive && s.isPopular).slice(0, 4));
+            setServices(JSON.parse(demoSrvs).filter((s: Service) => s.isActive && s.isPopular).slice(0, 4));
             return;
           }
         } catch (e) {}
@@ -35,66 +33,69 @@ export function HomePopularServices({ initialServices }: { initialServices: Serv
   if (services.length === 0) return null;
 
   return (
-    <section className="max-w-6xl mx-auto px-4 sm:px-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl sm:text-2xl font-bold text-theme-title tracking-tight">
-          Популярные процедуры
-        </h2>
-        <Link
-          href={getDemoHref("/services")}
-          className="text-xs font-semibold text-brand-accent hover:underline flex items-center gap-1"
-        >
-          <span>Все услуги</span>
-          <ChevronRight className="w-3.5 h-3.5" />
-        </Link>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {services.map((srv) => (
-          <div
-            key={srv.id}
-            className="rounded-3xl bg-brand-surface border border-brand-border overflow-hidden flex flex-col justify-between hover:border-brand-accent transition-all group shadow-sm"
+    <section className="section-tight">
+      <div className="page-shell">
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="eyebrow mb-3">Чаще всего выбирают</p>
+            <h2 className="heading text-[clamp(1.7rem,3.4vw,2.5rem)] text-theme-title">
+              Популярные услуги
+            </h2>
+          </div>
+          <Link
+            href={getDemoHref("/services")}
+            className="inline-flex items-center gap-1.5 text-[13px] font-medium text-theme-muted transition-colors hover:text-theme-title"
           >
-            {srv.imageUrl && (
-              <div className="relative h-36 w-full overflow-hidden bg-black/40">
-                <img
-                  src={srv.imageUrl}
-                  alt={srv.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-              </div>
-            )}
+            Все услуги
+            <ArrowUpRight className="h-4 w-4" />
+          </Link>
+        </div>
 
-            <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
-              <div>
-                <h3 className="font-bold text-theme-title text-sm group-hover:text-brand-accent transition-colors">
-                  {srv.title}
-                </h3>
-                <p className="text-xs text-theme-muted line-clamp-2 mt-1 leading-relaxed">
-                  {srv.description}
-                </p>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {services.map((srv) => (
+            <Link
+              key={srv.id}
+              href={getDemoHref("/booking?serviceId=" + srv.id)}
+              className="group flex flex-col overflow-hidden rounded-2xl border border-brand-border bg-brand-surface transition-all duration-300 hover:border-brand-accent/50"
+            >
+              <div className="relative h-[132px] overflow-hidden bg-[var(--brand-secondary)]">
+                {srv.imageUrl ? (
+                  <img
+                    src={srv.imageUrl}
+                    alt={srv.title}
+                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="h-full w-full bg-[radial-gradient(circle_at_30%_20%,rgba(var(--brand-accent-rgb),0.25),transparent_65%)]" />
+                )}
               </div>
 
-              <div className="pt-2 border-t border-brand-border/60 flex items-center justify-between">
+              <div className="flex flex-1 flex-col justify-between gap-4 p-4">
                 <div>
-                  <span className="font-extrabold text-theme-title text-sm block">
-                    {formatPrice(srv.price)}
-                  </span>
-                  <span className="text-[10px] text-theme-muted">
+                  <h3 className="line-clamp-2 text-[13.5px] font-semibold leading-snug text-theme-title">
+                    {srv.title}
+                  </h3>
+                  <p className="mt-1.5 inline-flex items-center gap-1.5 text-[11px] text-theme-muted">
+                    <Clock3 className="h-3 w-3" />
                     {formatDuration(srv.durationMinutes)}
-                  </span>
+                  </p>
                 </div>
 
-                <Link href={getDemoHref(`/booking?serviceId=${srv.id}`)}>
-                  <Button size="sm" className="h-8 px-3 rounded-xl text-xs font-semibold cursor-pointer">
-                    Записаться
-                  </Button>
-                </Link>
+                <div className="flex items-end justify-between border-t border-brand-border/70 pt-3">
+                  <span className="text-[15px] font-bold text-theme-title">
+                    {formatPrice(srv.price)}
+                  </span>
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-brand-border text-theme-muted transition-colors group-hover:border-brand-accent group-hover:text-brand-accent">
+                    <ArrowUpRight className="h-4 w-4" />
+                  </span>
+                </div>
               </div>
-            </div>
-          </div>
-        ))}
+            </Link>
+          ))}
+        </div>
       </div>
     </section>
   );
 }
+

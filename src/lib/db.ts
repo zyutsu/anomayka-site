@@ -1,6 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import { DatabaseSchema, BrandSettings, Category, Service, Booking, BlockedSlot, FAQItem, ReviewItem } from './types';
+import { shopNow } from './time';
+import { DEMO_LEADS, demoPath } from './demo-links';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const DB_FILE = path.join(DATA_DIR, 'database.json');
@@ -15,8 +17,8 @@ const DEFAULT_BRAND: BrandSettings = {
   name: 'ANOMAYKA',
   slogan: 'Премиальный автотехцентр, детейлинг и сервисное обслуживание',
   city: 'Москва',
-  phone: '+7 (999) 000-24-24',
-  phoneRaw: '79990002424',
+  phone: '+7 (903) 666-66-38',
+  phoneRaw: '79036666638',
   address: 'г. Москва, Ленинградский пр-т, д. 39, стр. 1',
   mapUrl: 'https://yandex.ru/maps/?text=%D0%B3.+%D0%9C%D0%BE%D1%81%D0%BA%D0%B2%D0%B0%2C+%D0%9B%D0%B5%D0%BD%D0%B8%D0%BD%D0%B3%D1%80%D0%B0%D0%B4%D1%81%D0%BA%D0%B8%D0%B9+%D0%BF%D1%80-%D1%82%2C+%D0%B4.+39%2C+%D1%81%D1%82%D1%80.+1',
   workHours: 'Ежедневно с 09:00 до 21:00',
@@ -25,11 +27,11 @@ const DEFAULT_BRAND: BrandSettings = {
   slotDurationMinutes: 30,
   workDays: [1, 2, 3, 4, 5, 6, 0],
   logoUrl: '/logo.jpg',
-  primaryColor: '#090a0f',
-  accentColor: '#e11d48',
-  secondaryColor: '#171a24',
+  primaryColor: '#f6f5f1',
+  accentColor: '#c8322a',
+  secondaryColor: '#eeece6',
   telegramUrl: 'https://t.me/anomayka_auto',
-  whatsappUrl: 'https://wa.me/79990002424',
+  whatsappUrl: 'https://wa.me/79036666638',
   vkUrl: 'https://vk.com/anomayka',
   heroHeadline: 'Онлайн-запись в автоцентр без звонков и ожидания',
   heroSubheadline: 'Выберите услугу, удобное время за 2 минуты — гарантированная бронь без очередей и накладок.',
@@ -266,6 +268,67 @@ function ensureDirectoryExists(filePath: string) {
   }
 }
 
+/**
+ * Переводит старые тёмные значения бренда на новую светлую палитру.
+ * Пользовательские цвета, выбранные в админке, не затрагиваются.
+ */
+function normalizeBrand(brand: BrandSettings): BrandSettings {
+  const legacyPrimary = ['#000000', '#090a0f', '#0a0b0d'];
+  const legacyAccent = ['#ff0000', '#e11d48'];
+  const legacySecondary = ['#171a24', '#15171c'];
+  const primary = legacyPrimary.includes(String(brand.primaryColor).toLowerCase())
+    ? '#f6f5f1'
+    : brand.primaryColor;
+  const accent = legacyAccent.includes(String(brand.accentColor).toLowerCase())
+    ? '#c8322a'
+    : brand.accentColor;
+  const secondary = legacySecondary.includes(String(brand.secondaryColor).toLowerCase())
+    ? '#eeece6'
+    : brand.secondaryColor;
+
+  return {
+    ...brand,
+    primaryColor: primary || '#f6f5f1',
+    accentColor: accent || '#c8322a',
+    secondaryColor: secondary || '#eeece6',
+    slogan: brand.slogan && brand.slogan.trim().length > 2
+      ? brand.slogan
+      : 'Онлайн-запись в автосервис без звонков и очередей',
+  };
+}
+
+// Статический реестр демо-сайтов: ссылки из таблицы работают без прогрева базы.
+function registryLinks() {
+  return DEMO_LEADS.map((lead) => ({
+    slug: lead.slug,
+    url: demoPath(lead),
+    name: lead.name,
+    createdAt: 'static',
+  }));
+}
+
+// Все известные короткие ссылки (реестр + созданные через админку)
+function allShortLinks(db: DatabaseSchema) {
+  const saved = Array.isArray(db.shortLinks) ? db.shortLinks : [];
+  const savedSlugs = new Set(saved.map((l) => l.slug.toLowerCase()));
+  const registry = registryLinks().filter((l) => !savedSlugs.has(l.slug.toLowerCase()));
+  return [...saved, ...registry];
+}
+
+/**
+ * В файл и в облако пишем только настоящие сохранённые ссылки.
+ * Статический реестр добавляется при чтении, иначе база вырастает
+ * на 200 записей при каждом сохранении.
+ */
+function withoutRegistry(data: DatabaseSchema): DatabaseSchema {
+  const registry = new Set(DEMO_LEADS.map((lead) => lead.slug.toLowerCase()));
+  const saved = Array.isArray(data.shortLinks) ? data.shortLinks : [];
+  return {
+    ...data,
+    shortLinks: saved.filter((l) => !registry.has(l.slug.toLowerCase())),
+  };
+}
+
 // Загрузка базы данных с поддержкой Vercel Serverless
 export function getDatabase(): DatabaseSchema {
   if (memoryDb) {
@@ -335,6 +398,8 @@ export function getDatabase(): DatabaseSchema {
 
     const content = fs.readFileSync(DB_FILE, 'utf-8');
     memoryDb = JSON.parse(content);
+    memoryDb!.brand = normalizeBrand(memoryDb!.brand);
+    memoryDb!.shortLinks = allShortLinks(memoryDb!);
     return memoryDb!;
   } catch (err) {
     console.error('Ошибка чтения базы данных:', err);
@@ -373,6 +438,8 @@ export async function getDatabaseAsync(): Promise<DatabaseSchema> {
     if (res.ok) {
       const cloudDb: DatabaseSchema = await res.json();
       if (cloudDb && cloudDb.brand && Array.isArray(cloudDb.categories)) {
+        cloudDb.brand = normalizeBrand(cloudDb.brand);
+        cloudDb.shortLinks = allShortLinks(cloudDb);
         memoryDb = cloudDb;
         // Дублируем в /tmp для мгновенного доступа
         try {
@@ -392,13 +459,14 @@ export async function getDatabaseAsync(): Promise<DatabaseSchema> {
 
 // Асинхронное сохранение базы данных с персистентностью в Vercel Blob
 export async function saveDatabaseAsync(data: DatabaseSchema): Promise<void> {
-  saveDatabase(data);
+  const payload = withoutRegistry(data);
+  saveDatabase(payload);
 
   // Сохраняем в Vercel Blob для глобальной синхронизации между всеми контейнерами
   if (process.env.BLOB_STORE_ID || process.env.BLOB_READ_WRITE_TOKEN || process.env.VERCEL_OIDC_TOKEN) {
     try {
       const { put } = await import('@vercel/blob');
-      await put('database.json', JSON.stringify(data, null, 2), {
+      await put('database.json', JSON.stringify(payload, null, 2), {
         access: 'public',
         addRandomSuffix: false,
         allowOverwrite: true,
@@ -512,11 +580,10 @@ export function calculateAvailableSlots(db: DatabaseSchema, date: string, servic
       }
     }
 
-    // Также проверяем, если дата — сегодняшняя, не прошло ли уже время
-    const now = new Date();
-    const todayStr = now.toISOString().split('T')[0];
-    if (date === todayStr) {
-      const currentNowMinutes = now.getHours() * 60 + now.getMinutes() + 15; // запас 15 минут
+    // Также проверяем, если дата — сегодняшняя, не прошло ли уже время (по времени автосервиса)
+    const now = shopNow();
+    if (date === now.date) {
+      const currentNowMinutes = now.minutes + 15; // запас 15 минут на дорогу
       if (slotStart <= currentNowMinutes) {
         isOccupied = true;
         conflictReason = 'Время прошло';
@@ -544,8 +611,7 @@ export async function getAvailableSlotsAsync(date: string, serviceDurationMinute
 }
 
 // Экспорт записей в CSV c UTF-8 BOM для безупречного открытия в Excel
-export function exportBookingsToCSV(): string {
-  const db = getDatabase();
+export function exportBookingsToCSV(db: DatabaseSchema): string {
   const header = ['ID Заявки', 'Код', 'Дата', 'Время', 'Клиент', 'Телефон', 'Автомобиль', 'Услуга', 'Длительность (мин)', 'Цена (руб)', 'Статус', 'Комментарий', 'Заметки'];
   
   const statusLabels: Record<string, string> = {
@@ -553,7 +619,8 @@ export function exportBookingsToCSV(): string {
     confirmed: 'Подтверждена',
     completed: 'Выполнена',
     cancelled: 'Отменена',
-    noshow: 'Неявка'
+    noshow: 'Неявка',
+    call_requested: 'Заявка на звонок'
   };
 
   const rows = db.bookings.map(b => [

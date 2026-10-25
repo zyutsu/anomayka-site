@@ -29,6 +29,16 @@ yarn-error.log*
 *.py
 *.xlsx
 __pycache__/
+
+# локальные проверки
+shot-*.png
+home-check*.png
+logo_preview*.png
+contact_sheet.png
+contrast*.log
+booking.log
+.chrome-tmp/
+).join(
 autosaloons_*.json
 state_view_sample.json
 yandex_search_api_sample.json
@@ -42,3 +52,7 @@ next-env.d.ts
 
 .vercel
 .env*
+
+# приватные данные
+credentials.txt
+

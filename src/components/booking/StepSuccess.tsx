@@ -2,8 +2,8 @@
 
 import React from "react";
 import Link from "next/link";
+import { ArrowRight, CalendarDays, Check, Clock3, Download, MapPin } from "lucide-react";
 import { Booking, BrandSettings } from "@/lib/types";
-import { CheckCircle2, Calendar, Clock, MapPin, Download, ArrowRight, UserCheck, MessageSquare } from "lucide-react";
 import { formatPrice, formatDuration, formatDateRu } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useBrand } from "@/context/BrandContext";
@@ -17,151 +17,138 @@ interface StepSuccessProps {
 export function StepSuccess({ booking, brand, onReset }: StepSuccessProps) {
   const brandCtx = useBrand();
   const getDemoHref = brandCtx?.getDemoHref || ((p: string) => p);
-  // Генерация iCalendar файла (.ics) для добавления события в Apple/Google Calendar
+
   const downloadICS = () => {
-    const startDateStr = `${booking.date.replace(/-/g, "")}T${booking.time.replace(":", "")}00`;
-    // Расчет времени окончания
     const [h, m] = booking.time.split(":").map(Number);
     const endMinutes = h * 60 + m + booking.durationMinutes;
-    const endH = Math.floor(endMinutes / 60).toString().padStart(2, "0");
-    const endM = (endMinutes % 60).toString().padStart(2, "0");
-    const endDateStr = `${booking.date.replace(/-/g, "")}T${endH}${endM}00`;
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const start = booking.date.replace(/-/g, "") + "T" + pad(h) + pad(m) + "00";
+    const end =
+      booking.date.replace(/-/g, "") + "T" + pad(Math.floor(endMinutes / 60)) + pad(endMinutes % 60) + "00";
 
-    const icsData = [
+    const ics = [
       "BEGIN:VCALENDAR",
       "VERSION:2.0",
-      "PRODID:-//ANOMAYKA Auto Booking//RU",
+      "PRODID:-//AutoBooking//RU",
       "BEGIN:VEVENT",
-      `SUMMARY:${booking.serviceTitle} — ${brand.name}`,
-      `DESCRIPTION:Бронь #${booking.code}\\nУслуга: ${booking.serviceTitle}\\nАвтомобиль: ${booking.carModel || "Не указан"}\\nСтоимость: ${booking.price} руб.`,
-      `LOCATION:${brand.address}`,
-      `DTSTART:${startDateStr}`,
-      `DTEND:${endDateStr}`,
+      "SUMMARY:" + booking.serviceTitle + " — " + brand.name,
+      "DESCRIPTION:Бронь " + booking.code + "\\nАвтомобиль: " + (booking.carModel || "не указан"),
+      "LOCATION:" + brand.address,
+      "DTSTART:" + start,
+      "DTEND:" + end,
       "STATUS:CONFIRMED",
       "END:VEVENT",
       "END:VCALENDAR",
     ].join("\r\n");
 
-    const blob = new Blob([icsData], { type: "text/calendar;charset=utf-8" });
+    const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
     const link = document.createElement("a");
     link.href = window.URL.createObjectURL(blob);
-    link.setAttribute("download", `anomayka-booking-${booking.code}.ics`);
+    link.setAttribute("download", "booking-" + booking.code + ".ics");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    window.URL.revokeObjectURL(link.href);
   };
 
   return (
-    <div className="max-w-xl mx-auto py-6 space-y-8 animate-in fade-in-50 zoom-in-95 duration-300">
-      <div className="text-center space-y-3">
-        <div className="w-16 h-16 rounded-2xl bg-brand-accent/15 border border-brand-accent/30 mx-auto flex items-center justify-center text-brand-accent shadow-xl shadow-brand-accent/20">
-          <CheckCircle2 className="w-9 h-9" />
+    <div className="mx-auto max-w-xl space-y-6">
+      <div className="text-center">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-600">
+          <Check className="h-6 w-6" />
         </div>
-        <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-          Запись успешно подтверждена!
+        <h2 className="heading mt-5 text-[clamp(1.6rem,3.4vw,2.2rem)] text-theme-title">
+          Запись подтверждена
         </h2>
-        <p className="text-sm text-slate-300">
-          Мы забронировали пост сервиса за вашим автомобилем. Слот гарантированно закреплен.
+        <p className="mx-auto mt-2 max-w-md text-[13px] leading-relaxed text-theme-muted">
+          Место закреплено за вашим автомобилем. Сохраните номер брони — по нему
+          можно найти запись в личном кабинете.
         </p>
       </div>
 
-      {/* Карточка талона записи */}
-      <div className="rounded-2xl bg-brand-surface border border-brand-accent/30 p-6 space-y-6 shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 transform translate-x-4 -translate-y-4 w-32 h-32 bg-brand-accent/10 rounded-full blur-2xl pointer-events-none" />
-
-        <div className="flex items-center justify-between border-b border-white/10 pb-4">
+      <div className="overflow-hidden rounded-2xl border border-brand-border bg-brand-surface">
+        <div className="flex items-center justify-between gap-4 border-b border-brand-border px-5 py-4">
           <div>
-            <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider block">
-              Номер бронирования
-            </span>
-            <span className="text-2xl font-black text-brand-accent tracking-widest font-mono">
+            <p className="mono-label">Номер брони</p>
+            <p className="mt-1 font-mono text-[19px] font-bold tracking-wide text-brand-accent">
               {booking.code}
-            </span>
+            </p>
           </div>
-          <div className="text-right">
-            <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider block">
-              Статус
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              Подтверждено
-            </span>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-          <div>
-            <span className="text-slate-400 block mb-0.5">Услуга:</span>
-            <strong className="text-white text-sm block">{booking.serviceTitle}</strong>
-            <span className="text-slate-400 text-[11px]">
-              {formatDuration(booking.durationMinutes)} • {formatPrice(booking.price)}
-            </span>
-          </div>
-
-          <div>
-            <span className="text-slate-400 block mb-0.5">Дата и время:</span>
-            <div className="flex items-center gap-1.5 text-white font-semibold text-sm">
-              <Calendar className="w-4 h-4 text-brand-accent" />
-              <span>{formatDateRu(booking.date)}</span>
-            </div>
-            <div className="flex items-center gap-1.5 text-brand-accent font-bold mt-0.5">
-              <Clock className="w-3.5 h-3.5" />
-              <span>{booking.time}</span>
-            </div>
-          </div>
-
-          <div>
-            <span className="text-slate-400 block mb-0.5">Клиент:</span>
-            <strong className="text-white block">{booking.clientName}</strong>
-            <span className="text-slate-400">{booking.clientPhone}</span>
-          </div>
-
-          <div>
-            <span className="text-slate-400 block mb-0.5">Автомобиль:</span>
-            <strong className="text-white block">
-              {booking.carModel || "Уточняется при визите"}
-            </strong>
-          </div>
-        </div>
-
-        <div className="pt-4 border-t border-white/10 flex items-start gap-2.5 text-xs text-slate-400">
-          <MapPin className="w-4 h-4 text-brand-accent shrink-0 mt-0.5" />
-          <span>
-            Ждем вас по адресу: <strong className="text-white">{brand.address}</strong>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold text-emerald-600">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            Подтверждено
           </span>
+        </div>
+
+        <div className="space-y-4 p-5">
+          <p className="text-[14px] font-semibold leading-snug text-theme-title">
+            {booking.serviceTitle}
+          </p>
+
+          <dl className="grid gap-3 text-[12px] sm:grid-cols-2">
+            <div>
+              <dt className="inline-flex items-center gap-1.5 text-theme-muted">
+                <CalendarDays className="h-3.5 w-3.5" />
+                Дата
+              </dt>
+              <dd className="mt-0.5 font-medium text-theme-title">{formatDateRu(booking.date)}</dd>
+            </div>
+            <div>
+              <dt className="inline-flex items-center gap-1.5 text-theme-muted">
+                <Clock3 className="h-3.5 w-3.5" />
+                Время
+              </dt>
+              <dd className="mt-0.5 font-semibold text-brand-accent">
+                {booking.time} · {formatDuration(booking.durationMinutes)}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-theme-muted">Клиент</dt>
+              <dd className="mt-0.5 font-medium text-theme-title">
+                {booking.clientName}, {booking.clientPhone}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-theme-muted">Стоимость</dt>
+              <dd className="mt-0.5 font-medium text-theme-title">{formatPrice(booking.price)}</dd>
+            </div>
+          </dl>
+
+          <div className="flex items-start gap-2.5 border-t border-brand-border pt-4 text-[12px] text-theme-muted">
+            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-brand-accent" />
+            <span>
+              Ждём вас: <span className="font-medium text-theme-title">{brand.address}</span>
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Быстрые действия */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <Button
-          onClick={downloadICS}
-          variant="secondary"
-          className="flex-1 justify-center gap-2 text-xs"
-        >
-          <Download className="w-4 h-4 text-brand-accent" />
-          <span>Добавить в календарь (.ics)</span>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Button type="button" onClick={downloadICS} variant="secondary" className="h-11 flex-1 text-[12px]">
+          <Download className="h-4 w-4" />
+          В календарь
         </Button>
-
         <Link
-          href={getDemoHref(`/account?phone=${encodeURIComponent(booking.clientPhone)}`)}
+          href={getDemoHref("/account?phone=" + encodeURIComponent(booking.clientPhone))}
           className="flex-1"
         >
-          <Button variant="outline" className="w-full justify-center gap-2 text-xs">
-            <UserCheck className="w-4 h-4 text-brand-accent" />
-            <span>Личный кабинет</span>
+          <Button variant="outline" className="h-11 w-full text-[12px]">
+            Мои записи
+            <ArrowRight className="h-4 w-4" />
           </Button>
         </Link>
       </div>
 
-      <div className="text-center pt-2">
+      <div className="text-center">
         <button
+          type="button"
           onClick={onReset}
-          className="text-xs text-slate-400 hover:text-white underline underline-offset-4 cursor-pointer"
+          className="text-[12px] text-theme-muted underline underline-offset-4 transition-colors hover:text-theme-title"
         >
-          Оформить еще одну запись на другой автомобиль
+          Записать ещё один автомобиль
         </button>
       </div>
     </div>
   );
 }
+

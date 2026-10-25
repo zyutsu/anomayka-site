@@ -1,11 +1,15 @@
 import { NextResponse } from 'next/server';
 import { getDatabase, getDatabaseAsync, saveDatabase, saveDatabaseAsync } from '@/lib/db';
 import { ShortDemoLink } from '@/lib/types';
+import { canManage, isDemoRequest } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   try {
+    if (!canManage(req) || isDemoRequest(req)) {
+      return NextResponse.json({ error: 'Требуется вход в панель' }, { status: 401 });
+    }
     const body = await req.json();
 
     // Пакетное сохранение массива ссылок (batch)

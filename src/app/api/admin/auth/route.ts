@@ -1,236 +1,159 @@
-import { NextResponse } from 'next/server';
-import crypto from 'crypto';
-import { getDatabaseAsync, saveDatabaseAsync } from '@/lib/db';
+import { NextResponse } from "next/server";
+import { getDatabaseAsync, saveDatabaseAsync } from "@/lib/db";
+import {
+  createStaffToken,
+  hashPassword,
+  isDemoRequest,
+  readSessionToken,
+  verifyPassword,
+  verifyStaffToken,
+} from "@/lib/auth";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
-// В памяти храним сессии и счетчик неудачных попыток входа (защита от брутфорса)
-interface SessionData {
-  adminId: string;
-  email: string;
-  name: string;
-  role: string;
-  expiresAt: number;
-}
-
-const activeSessions = new Map<string, SessionData>();
+const DEMO_PASSWORD = "AutoPro#2026";
 const loginAttempts = new Map<string, { count: number; lockedUntil: number }>();
 
-function hashPassword(pass: string): string {
-  return crypto.createHash('sha256').update(pass).digest('hex');
+function clientKey(req: Request): string {
+  return (
+    req.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
+    req.headers.get("x-real-ip") ||
+    "local"
+  );
 }
 
-function verifyPassword(inputPass: string, storedHashOrPass: string): boolean {
-  if (storedHashOrPass === inputPass) return true;
-  return storedHashOrPass === hashPassword(inputPass);
-}
-
-// Проверка активной сессии
 export async function GET(req: Request) {
-  try {
-    const cookieHeader = req.headers.get('cookie') || '';
-    const match = cookieHeader.match(/staff_session=([^;]+)/);
-    const tokenFromCookie = match ? match[1] : null;
-
-    const authHeader = req.headers.get('authorization') || '';
-    const tokenFromHeader = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
-
-    const token = tokenFromCookie || tokenFromHeader;
-
-    if (!token) {
-      return NextResponse.json({ authenticated: false }, { status: 401 });
-    }
-
-    const session = activeSessions.get(token);
-    if (!session || session.expiresAt < Date.now()) {
-      if (session) activeSessions.delete(token);
-      return NextResponse.json({ authenticated: false, error: 'Сессия истекла' }, { status: 401 });
-    }
-
-    return NextResponse.json({
-      authenticated: true,
-      user: {
-        id: session.adminId,
-        email: session.email,
-        name: session.name,
-        role: session.role,
-      },
-    });
-  } catch (error) {
-    return NextResponse.json({ authenticated: false }, { status: 500 });
+  const session = verifyStaffToken(readSessionToken(req));
+  if (!session) {
+    return NextResponse.json({ authenticated: false }, { status: 401 });
   }
+  return NextResponse.json({
+    authenticated: true,
+    user: {
+      id: session.adminId,
+      email: session.email,
+      name: session.name,
+      role: session.role,
+    },
+  });
 }
 
-// Вход в систему с защитой от перебора (Brute Force Protection)
 export async function POST(req: Request) {
   try {
-    const ip = req.headers.get('x-forwarded-for') || 'local';
-    const attempt = loginAttempts.get(ip);
-
+    const key = clientKey(req);
+    const attempt = loginAttempts.get(key);
     if (attempt && attempt.lockedUntil > Date.now()) {
-      const waitMinutes = Math.ceil((attempt.lockedUntil - Date.now()) / 60000);
+      const minutes = Math.ceil((attempt.lockedUntil - Date.now()) / 60000);
       return NextResponse.json(
-        { error: `Слишком много неверных попыток входа. Доступ заблокирован на ${waitMinutes} мин.` },
+        { error: "Слишком много попыток. Повторите через " + minutes + " мин." },
         { status: 429 }
       );
     }
 
-    const isDemo = req.headers.get('x-demo-mode') === '1' || new URL(req.url).searchParams.get('demo') === '1';
+    const demo = isDemoRequest(req);
     const { email, password } = await req.json();
-    const cleanLogin = (email || '').toLowerCase().trim();
-
-    // Поддерживаем логин 'anomayka' или 'admin@anomayka.ru'
-    const isAnomayka = cleanLogin === 'anomayka' || cleanLogin === 'admin@anomayka.ru';
+    const login = String(email || "").toLowerCase().trim();
 
     const db = await getDatabaseAsync();
-    let admin = db.admins.find((a) => a.email.toLowerCase() === cleanLogin || (isAnomayka && a.id === 'adm-1'));
+    const admin =
+      db.admins.find((a) => a.email.toLowerCase() === login) ||
+      (login === "anomayka" || login === "admin@anomayka.ru" ? db.admins[0] : undefined);
 
-    if (!admin && isAnomayka && db.admins.length > 0) {
-      admin = db.admins[0];
-    }
+    const valid = demo
+      ? verifyPassword(password || "", DEMO_PASSWORD)
+      : Boolean(admin && verifyPassword(password || "", admin.passwordHash));
 
-    const DEMO_PASSWORD = 'AutoPro#2026';
-    const PROD_PASSWORD = 'qwertyzxcinside337';
-    const PROD_HASH = '748050861a166e96193053a9b3a229e436d160cb11660ec1845d45340440de08';
-
-    let isPasswordValid = false;
-    if (isDemo) {
-      // В демо-режиме пароль по умолчанию: AutoPro#2026
-      isPasswordValid = verifyPassword(password, DEMO_PASSWORD);
-    } else {
-      // На основном сайте: пароль qwertyzxcinside337 (или пароль из БД)
-      isPasswordValid =
-        verifyPassword(password, PROD_PASSWORD) ||
-        verifyPassword(password, PROD_HASH) ||
-        (admin ? verifyPassword(password, admin.passwordHash) : false);
-
-      // При успешном входе обновляем хеш в БД на актуальный
-      if (admin && isPasswordValid && admin.passwordHash !== PROD_HASH) {
-        admin.passwordHash = PROD_HASH;
-        try {
-          await saveDatabaseAsync(db);
-        } catch (e) {}
-      }
-    }
-
-    if (!admin || !isPasswordValid) {
+    if (!admin || !valid) {
       const current = attempt || { count: 0, lockedUntil: 0 };
       current.count += 1;
-      if (current.count >= 5) {
-        current.lockedUntil = Date.now() + 5 * 60 * 1000; // блокировка на 5 минут
-      }
-      loginAttempts.set(ip, current);
-
-      return NextResponse.json(
-        { error: 'Неверный логин или пароль администратора' },
-        { status: 401 }
-      );
+      if (current.count >= 5) current.lockedUntil = Date.now() + 5 * 60 * 1000;
+      loginAttempts.set(key, current);
+      return NextResponse.json({ error: "Неверный логин или пароль" }, { status: 401 });
     }
 
-    // Успешный вход — сбрасываем счетчик ошибок
-    loginAttempts.delete(ip);
+    loginAttempts.delete(key);
 
-    // Создаем криптографически стойкий токен сессии
-    const sessionToken = crypto.randomBytes(32).toString('hex');
-    const expiresAt = Date.now() + 7 * 24 * 3600 * 1000; // 7 дней
-
-    activeSessions.set(sessionToken, {
+    const token = createStaffToken({
       adminId: admin.id,
       email: admin.email,
       name: admin.name,
       role: admin.role,
-      expiresAt,
+      demo,
     });
 
     const res = NextResponse.json({
       success: true,
-      token: sessionToken,
-      user: {
-        id: admin.id,
-        email: admin.email,
-        name: admin.name,
-        role: admin.role,
-      },
+      user: { id: admin.id, email: admin.email, name: admin.name, role: admin.role },
     });
 
-    // Устанавливаем безопасный HttpOnly cookie
-    res.cookies.set('staff_session', sessionToken, {
+    res.cookies.set("staff_session", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
       maxAge: 7 * 24 * 3600,
     });
 
     return res;
-  } catch (error: any) {
-    console.error('AUTH ROUTE ERROR:', error?.message || error);
-    return NextResponse.json({ error: 'Ошибка авторизации' }, { status: 500 });
+  } catch (error) {
+    console.error("AUTH ERROR:", error);
+    return NextResponse.json({ error: "Ошибка авторизации" }, { status: 500 });
   }
 }
 
-// Смена пароля администратора / персонала
 export async function PATCH(req: Request) {
   try {
-    const { email, currentPassword, newPassword } = await req.json();
+    const demo = isDemoRequest(req);
+    const session = verifyStaffToken(readSessionToken(req));
+    if (!demo && !session) {
+      return NextResponse.json({ error: "Требуется вход в панель" }, { status: 401 });
+    }
 
-    if (!newPassword || newPassword.length < 6) {
+    const { currentPassword, newPassword } = await req.json();
+    if (!newPassword || String(newPassword).length < 8) {
       return NextResponse.json(
-        { error: 'Новый пароль должен содержать не менее 6 символов' },
+        { error: "Новый пароль должен содержать не менее 8 символов" },
         { status: 400 }
       );
     }
 
-    const isDemo = req.headers.get('x-demo-mode') === '1' || new URL(req.url).searchParams.get('demo') === '1';
-    if (isDemo) {
+    if (demo) {
       return NextResponse.json({
         success: true,
         demo: true,
-        message: 'Пароль успешно обновлен (в демо-режиме)',
+        message: "В демо-режиме пароль не изменяется",
       });
     }
 
     const db = await getDatabaseAsync();
-    const cleanEmail = (email || 'admin@anomayka.ru').toLowerCase().trim();
-    const adminIndex = db.admins.findIndex((a) => a.email.toLowerCase() === cleanEmail);
-
-    if (adminIndex === -1) {
-      return NextResponse.json({ error: 'Пользователь не найден' }, { status: 404 });
+    const index = db.admins.findIndex((a) => a.id === session!.adminId);
+    if (index === -1) {
+      return NextResponse.json({ error: "Пользователь не найден" }, { status: 404 });
     }
 
-    const admin = db.admins[adminIndex];
-    if (!verifyPassword(currentPassword, admin.passwordHash)) {
-      return NextResponse.json({ error: 'Текущий пароль указан неверно' }, { status: 403 });
+    const admin = db.admins[index];
+    if (!verifyPassword(currentPassword || "", admin.passwordHash)) {
+      return NextResponse.json({ error: "Текущий пароль указан неверно" }, { status: 403 });
     }
 
-    // Сохраняем надежный хэш нового пароля
     admin.passwordHash = hashPassword(newPassword);
-    db.admins[adminIndex] = admin;
+    db.admins[index] = admin;
     await saveDatabaseAsync(db);
 
-    return NextResponse.json({
-      success: true,
-      message: 'Пароль успешно обновлен и защищен SHA-256',
-    });
-  } catch (error: any) {
-    return NextResponse.json({ error: 'Ошибка обновления пароля' }, { status: 500 });
+    return NextResponse.json({ success: true, message: "Пароль обновлён" });
+  } catch (error) {
+    console.error("PASSWORD CHANGE ERROR:", error);
+    return NextResponse.json({ error: "Ошибка обновления пароля" }, { status: 500 });
   }
 }
 
-// Выход из системы
-export async function DELETE(req: Request) {
-  const cookieHeader = req.headers.get('cookie') || '';
-  const match = cookieHeader.match(/staff_session=([^;]+)/);
-  if (match) {
-    activeSessions.delete(match[1]);
-  }
-
-  const res = NextResponse.json({ success: true, message: 'Выход выполнен' });
-  res.cookies.set('staff_session', '', {
+export async function DELETE() {
+  const res = NextResponse.json({ success: true });
+  res.cookies.set("staff_session", "", {
     httpOnly: true,
-    path: '/',
+    path: "/",
     maxAge: 0,
   });
-
   return res;
 }
+

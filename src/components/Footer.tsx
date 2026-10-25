@@ -2,43 +2,45 @@
 
 import React from "react";
 import Link from "next/link";
-import { Phone, MapPin, Clock, Send, MessageSquare, Shield, Smartphone } from "lucide-react";
+import { MapPin, Phone, Clock, Send, MessageSquare, ShieldCheck, ArrowUpRight } from "lucide-react";
 import { BrandSettings } from "@/lib/types";
 import { useBrand } from "@/context/BrandContext";
+import { BrandMark } from "@/components/BrandMark";
 
 export function Footer({ brand: propBrand }: { brand?: BrandSettings }) {
   const brandContext = useBrand();
   const brand = brandContext?.brand || propBrand!;
   const getDemoHref = brandContext?.getDemoHref || ((p: string) => p);
+  const mapHref = brand.mapUrl || "https://yandex.ru/maps/?text=" + encodeURIComponent(brand.address);
+
   return (
-    <footer className="bg-[#06070a] border-t border-white/10 pt-16 pb-12 text-slate-400 text-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
-          {/* Бренд */}
-          <div className="space-y-4">
+    <footer className="mt-auto border-t border-brand-border bg-[var(--brand-primary)]">
+      <div className="page-shell py-14">
+        <div className="grid gap-12 lg:grid-cols-[1.4fr_1fr_1fr]">
+          <div className="max-w-sm space-y-5">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl overflow-hidden border border-white/15 bg-black/60 flex items-center justify-center">
-                {brand.logoUrl ? (
-                  <img src={brand.logoUrl} alt={brand.name} className="w-full h-full object-contain p-0.5" />
-                ) : (
-                  <span className="text-brand-accent font-black">A</span>
-                )}
+              <BrandMark
+                name={brand.name}
+                logoUrl={brand.logoUrl}
+                accentColor={brand.accentColor}
+                className="h-11 w-11 rounded-xl border border-brand-border bg-[var(--brand-secondary)] p-1"
+              />
+              <div>
+                <p className="text-base font-bold tracking-tight text-theme-title">{brand.name}</p>
+                <p className="text-[11px] text-theme-muted">{brand.city}</p>
               </div>
-              <span className="font-extrabold text-xl text-white tracking-tight">{brand.name}</span>
             </div>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              {brand.slogan}
-            </p>
-            <div className="flex items-center gap-3 pt-2">
+            <p className="text-sm leading-relaxed text-theme-muted">{brand.slogan}</p>
+            <div className="flex items-center gap-2">
               {brand.telegramUrl && (
                 <a
                   href={brand.telegramUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white transition-colors"
-                  title="Telegram"
+                  className="inline-flex h-9 items-center gap-2 rounded-full border border-brand-border px-3 text-xs text-theme-muted transition-colors hover:text-theme-title"
                 >
-                  <Send className="w-4 h-4 text-sky-400" />
+                  <Send className="h-3.5 w-3.5 text-sky-400" />
+                  Telegram
                 </a>
               )}
               {brand.whatsappUrl && (
@@ -46,106 +48,91 @@ export function Footer({ brand: propBrand }: { brand?: BrandSettings }) {
                   href={brand.whatsappUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white transition-colors"
-                  title="WhatsApp"
+                  className="inline-flex h-9 items-center gap-2 rounded-full border border-brand-border px-3 text-xs text-theme-muted transition-colors hover:text-theme-title"
                 >
-                  <MessageSquare className="w-4 h-4 text-emerald-400" />
+                  <MessageSquare className="h-3.5 w-3.5 text-emerald-600" />
+                  WhatsApp
                 </a>
               )}
             </div>
           </div>
 
-          {/* Быстрые ссылки */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-white">Разделы сайта</h4>
-            <ul className="space-y-2 text-xs">
-              <li>
-                <Link href={getDemoHref("/services")} className="hover:text-white transition-colors">
-                  Услуги и прайс-лист
-                </Link>
-              </li>
-              <li>
-                <Link href={getDemoHref("/booking")} className="hover:text-white transition-colors">
-                  Онлайн-запись 24/7
-                </Link>
-              </li>
-              <li>
-                <Link href={getDemoHref("/account")} className="hover:text-white transition-colors">
-                  Личный кабинет / Перенос записи
-                </Link>
-              </li>
-              <li>
-                <Link href={getDemoHref("/faq")} className="hover:text-white transition-colors">
-                  Вопросы и ответы (FAQ)
-                </Link>
-              </li>
-              <li>
-                <Link href={getDemoHref("/contacts")} className="hover:text-white transition-colors">
-                  Контакты и схема проезда
-                </Link>
-              </li>
+          <div>
+            <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-theme-muted">
+              Разделы
+            </p>
+            <ul className="space-y-2.5 text-sm">
+              {[
+                ["Услуги и цены", "/services"],
+                ["Онлайн-запись", "/booking"],
+                ["Мои записи", "/account"],
+                ["Контакты", "/contacts"],
+                ["Вопросы и ответы", "/faq"],
+              ].map(([label, href]) => (
+                <li key={href}>
+                  <Link
+                    href={getDemoHref(href)}
+                    className="text-theme-muted transition-colors hover:text-theme-title"
+                  >
+                    {label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
-          {/* Контакты и время */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-white">Контакты и график</h4>
-            <div className="space-y-2.5 text-xs">
-              <div className="flex items-start gap-2.5">
-                <MapPin className="w-4 h-4 text-brand-accent shrink-0 mt-0.5" />
-                <a
-                  href={brand.mapUrl || `https://yandex.ru/maps/?text=${encodeURIComponent(brand.address)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-white hover:underline transition-colors"
-                  title="Посмотреть на Яндекс.Картах"
-                >
-                  {brand.address}
-                </a>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <Phone className="w-4 h-4 text-brand-accent shrink-0" />
-                <a href={`tel:${brand.phoneRaw || brand.phone}`} className="hover:text-white transition-colors">
-                  {brand.phone}
-                </a>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <Clock className="w-4 h-4 text-brand-accent shrink-0" />
-                <span>{brand.workHours}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* PWA и админка */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-white">Мобильное приложение</h4>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Установите сайт как приложение (PWA) на экран смартфона для быстрой записи в 2 клика.
+          <div>
+            <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-theme-muted">
+              Контакты
             </p>
-            <div className="pt-2 flex flex-col gap-2">
-              <Link
-                href={getDemoHref("/admin")}
-                className="inline-flex items-center gap-2 text-xs text-slate-400 hover:text-white transition-colors py-1"
+            <div className="space-y-3 text-sm text-theme-muted">
+              <a
+                href={"tel:" + (brand.phoneRaw || brand.phone)}
+                className="flex items-center gap-2 transition-colors hover:text-theme-title"
               >
-                <Shield className="w-3.5 h-3.5 text-brand-accent" />
-                <span>Панель администратора (/admin)</span>
-              </Link>
+                <Phone className="h-3.5 w-3.5 shrink-0 text-brand-accent" />
+                {brand.phone}
+              </a>
+              <a
+                href={mapHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-start gap-2 transition-colors hover:text-theme-title"
+              >
+                <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-accent" />
+                <span>{brand.address}</span>
+              </a>
+              <p className="flex items-center gap-2">
+                <Clock className="h-3.5 w-3.5 shrink-0 text-brand-accent" />
+                {brand.workHours}
+              </p>
+              <a
+                href={mapHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-theme-title"
+              >
+                Проложить маршрут
+                <ArrowUpRight className="h-3.5 w-3.5" />
+              </a>
             </div>
           </div>
         </div>
 
-        <div className="pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <div>
-            © {new Date().getFullYear()} {brand.name}. Все права защищены.
-          </div>
-          <div className="flex items-center gap-6">
-            <span>White-Label Multi-Tenant Ready</span>
-            <Link href={getDemoHref("/admin")} className="hover:text-slate-400 transition-colors">
-              Вход для персонала
-            </Link>
-          </div>
+        <div className="mt-12 flex flex-col gap-3 border-t border-brand-border pt-6 text-[11px] text-theme-muted sm:flex-row sm:items-center sm:justify-between">
+          <p>
+            © {new Date().getFullYear()} {brand.name}. Онлайн-запись и обслуживание автомобилей.
+          </p>
+          <Link
+            href={getDemoHref("/admin")}
+            className="inline-flex items-center gap-1.5 transition-colors hover:text-theme-title"
+          >
+            <ShieldCheck className="h-3.5 w-3.5" />
+            Панель управления
+          </Link>
         </div>
       </div>
     </footer>
   );
 }
+

@@ -1,89 +1,74 @@
-import { NextResponse } from 'next/server';
-import { getDatabaseAsync, saveDatabaseAsync } from '@/lib/db';
-import { Service } from '@/lib/types';
+import { NextResponse } from "next/server";
+import { getDatabaseAsync, saveDatabaseAsync } from "@/lib/db";
+import { Service } from "@/lib/types";
+import { canManage, isDemoRequest } from "@/lib/auth";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const categoryId = searchParams.get('categoryId');
-  const all = searchParams.get('all') === 'true';
+  const categoryId = searchParams.get("categoryId");
+  const all = searchParams.get("all") === "true";
 
   const db = await getDatabaseAsync();
   let services = db.services;
 
-  if (!all) {
-    services = services.filter((s) => s.isActive);
-  }
-
-  if (categoryId) {
-    services = services.filter((s) => s.categoryId === categoryId);
-  }
+  if (!all) services = services.filter((s) => s.isActive);
+  if (categoryId) services = services.filter((s) => s.categoryId === categoryId);
 
   return NextResponse.json(services);
 }
 
 export async function POST(req: Request) {
   try {
-    const isDemo = req.headers.get('x-demo-mode') === '1' || new URL(req.url).searchParams.get('demo') === '1';
-    const serviceData: Service = await req.json();
+    if (!canManage(req)) {
+      return NextResponse.json({ error: "Требуется вход в панель" }, { status: 401 });
+    }
+    if (isDemoRequest(req)) {
+      return NextResponse.json({ success: true, demo: true, message: "Демо: изменения не сохраняются" });
+    }
 
-    if (isDemo) {
-      return NextResponse.json({
-        success: true,
-        demo: true,
-        service: serviceData,
-        message: 'Демо-режим: услуга сохранена в песочнице и не влияет на основной сайт'
+    const data: Service = await req.json();
+    const db = await getDatabaseAsync();
+
+    const index = db.services.findIndex((s) => s.id === data.id);
+    if (index >= 0) {
+      db.services[index] = { ...db.services[index], ...data };
+    } else {
+      db.services.push({
+        ...data,
+        id: data.id || "srv-" + Date.now(),
+        isActive: data.isActive ?? true,
       });
     }
 
-    const db = await getDatabaseAsync();
-
-    const existingIndex = db.services.findIndex((s) => s.id === serviceData.id);
-    if (existingIndex >= 0) {
-      db.services[existingIndex] = {
-        ...db.services[existingIndex],
-        ...serviceData,
-      };
-    } else {
-      const newService: Service = {
-        ...serviceData,
-        id: serviceData.id || `srv-${Date.now()}`,
-        isActive: serviceData.isActive ?? true,
-      };
-      db.services.push(newService);
-    }
-
     await saveDatabaseAsync(db);
-    return NextResponse.json({ success: true, service: serviceData, services: db.services });
+    return NextResponse.json({ success: true, services: db.services });
   } catch (error) {
-    return NextResponse.json({ error: 'Ошибка сохранения услуги' }, { status: 500 });
+    return NextResponse.json({ error: "Ошибка сохранения услуги" }, { status: 500 });
   }
 }
 
 export async function DELETE(req: Request) {
   try {
-    const isDemo = req.headers.get('x-demo-mode') === '1' || new URL(req.url).searchParams.get('demo') === '1';
-    const { searchParams } = new URL(req.url);
-    const id = searchParams.get('id');
-    if (!id) {
-      return NextResponse.json({ error: 'ID не указан' }, { status: 400 });
+    if (!canManage(req)) {
+      return NextResponse.json({ error: "Требуется вход в панель" }, { status: 401 });
+    }
+    if (isDemoRequest(req)) {
+      return NextResponse.json({ success: true, demo: true, message: "Демо: изменения не сохраняются" });
     }
 
-    if (isDemo) {
-      return NextResponse.json({
-        success: true,
-        demo: true,
-        id,
-        message: 'Демо-режим: услуга удалена только в вашей сессии'
-      });
-    }
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+    if (!id) return NextResponse.json({ error: "Не указан ID услуги" }, { status: 400 });
 
     const db = await getDatabaseAsync();
     db.services = db.services.filter((s) => s.id !== id);
     await saveDatabaseAsync(db);
+
     return NextResponse.json({ success: true, services: db.services });
   } catch (error) {
-    return NextResponse.json({ error: 'Ошибка удаления услуги' }, { status: 500 });
+    return NextResponse.json({ error: "Ошибка удаления услуги" }, { status: 500 });
   }
 }
+

@@ -1,84 +1,93 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Phone, Calendar, Menu, X, Shield, Clock, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Calendar, Menu, X, Phone, ShieldCheck } from "lucide-react";
 import { BrandSettings } from "@/lib/types";
 import { useBrand } from "@/context/BrandContext";
+import { BrandMark } from "@/components/BrandMark";
+
+const NAV_LINKS = [
+  { label: "Услуги", href: "/services" },
+  { label: "Как записаться", href: "/#how" },
+  { label: "Контакты", href: "/contacts" },
+  { label: "Вопросы", href: "/faq" },
+  { label: "Мои записи", href: "/account" },
+];
 
 export function Navbar({ brand: propBrand }: { brand?: BrandSettings }) {
   const brandContext = useBrand();
   const brand = brandContext?.brand || propBrand!;
   const getDemoHref = brandContext?.getDemoHref || ((p: string) => p);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    const onScroll = () => setScrolled(window.scrollY > 12);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const navLinks = [
-    { label: "Главная", href: "/" },
-    { label: "Услуги и цены", href: "/services" },
-    { label: "Записаться", href: "/booking" },
-    { label: "Контакты", href: "/contacts" },
-    { label: "FAQ", href: "/faq" },
-    { label: "Мои записи", href: "/account" },
-  ];
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    document.body.style.overflow = open ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
 
   return (
     <header
-      className={`sticky top-0 z-50 transition-all duration-300 ${
-        scrolled
-          ? "bg-[var(--brand-header-bg)] backdrop-blur-md border-b border-brand-border shadow-2xl py-2.5"
-          : "bg-[var(--brand-header-bg)] border-b border-brand-border/60 py-3.5"
-      }`}
+      className={
+        "sticky top-0 z-50 transition-all duration-300 " +
+        (scrolled
+          ? "bg-[var(--brand-header-bg)] backdrop-blur-xl border-b border-brand-border"
+          : "bg-transparent border-b border-transparent")
+      }
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between gap-4">
-          {/* Бренд и логотип */}
-          <Link href={getDemoHref("/")} className="flex items-center gap-3.5 group focus:outline-none">
-            <div className="relative w-11 h-11 sm:w-12 sm:h-12 rounded-xl overflow-hidden border border-brand-border bg-black/60 shadow-md group-hover:border-brand-accent transition-all flex items-center justify-center shrink-0">
-              {brand.logoUrl ? (
-                <img
-                  src={brand.logoUrl}
-                  alt={brand.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-              ) : (
-                <div className="text-brand-accent font-black text-xl px-2">A</div>
-              )}
-            </div>
-            <div className="flex flex-col">
-              <span className="font-extrabold text-lg sm:text-xl tracking-tight text-theme-title group-hover:text-brand-accent transition-colors">
+      <div className="page-shell">
+        <div className="flex h-[72px] items-center justify-between gap-4">
+          <Link
+            href={getDemoHref("/")}
+            className="flex min-w-0 items-center gap-3"
+            aria-label={brand.name + " — на главную"}
+          >
+            <BrandMark
+              name={brand.name}
+              logoUrl={brand.logoUrl}
+              accentColor={brand.accentColor}
+              className="h-10 w-10 shrink-0 rounded-xl border border-brand-border bg-[var(--brand-secondary)] p-1"
+              imageClassName="rounded-lg"
+            />
+            <span className="min-w-0">
+              <span className="block truncate text-[15px] font-bold tracking-tight text-theme-title">
                 {brand.name}
               </span>
-              <span className="text-[10px] text-theme-muted font-medium tracking-wider uppercase hidden sm:block">
-                {brand.city} • Онлайн-запись 24/7
+              <span className="hidden text-[11px] text-theme-muted sm:block">
+                {brand.city} · онлайн-запись 24/7
               </span>
-            </div>
+            </span>
           </Link>
 
-          {/* Десктопное меню */}
-          <nav className="hidden lg:flex items-center gap-1 bg-brand-surface/80 border border-brand-border rounded-full px-4 py-1.5 backdrop-blur-sm shadow-sm">
-            {navLinks.map((link) => {
-              const isActive = pathname === link.href;
+          <nav className="hidden items-center gap-1 lg:flex" aria-label="Основная навигация">
+            {NAV_LINKS.map((link) => {
+              const active = pathname === link.href.split("#")[0] && link.href !== "/#how";
               return (
                 <Link
                   key={link.href}
                   href={getDemoHref(link.href)}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all ${
-                    isActive
-                      ? "bg-brand-accent text-white shadow-sm shadow-brand-accent/30 font-semibold"
-                      : "text-theme-muted hover:text-theme-title hover:bg-black/5 dark:hover:bg-white/5"
-                  }`}
+                  className={
+                    "rounded-full px-3.5 py-2 text-[13px] transition-colors " +
+                    (active
+                      ? "bg-[var(--brand-secondary)] font-semibold text-theme-title"
+                      : "text-theme-muted hover:text-theme-title")
+                  }
                 >
                   {link.label}
                 </Link>
@@ -86,98 +95,85 @@ export function Navbar({ brand: propBrand }: { brand?: BrandSettings }) {
             })}
           </nav>
 
-          {/* Правая секция: телефон, кнопка записи, вход в админку */}
-          <div className="hidden sm:flex items-center gap-3">
+          <div className="hidden items-center gap-2 sm:flex">
             <a
-              href={`tel:${brand.phoneRaw || brand.phone}`}
-              className="flex items-center gap-2 text-xs font-semibold text-theme-title bg-brand-surface hover:border-brand-accent px-3 py-2 rounded-xl border border-brand-border transition-all shadow-sm"
+              href={"tel:" + (brand.phoneRaw || brand.phone)}
+              className="rounded-full px-3 py-2 text-[13px] font-semibold text-theme-title transition-colors hover:text-brand-accent"
             >
-              <Phone className="w-3.5 h-3.5 text-brand-accent" />
-              <span>{brand.phone}</span>
+              {brand.phone}
             </a>
-
-            <Link href={getDemoHref("/booking")}>
-              <Button size="sm" className="font-semibold shadow-md shadow-brand-accent/20">
-                <Calendar className="w-3.5 h-3.5" />
-                <span>Записаться</span>
-              </Button>
-            </Link>
-
             <Link
-              href={getDemoHref("/admin")}
-              className="p-2 text-theme-muted hover:text-theme-title hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors"
-              title="Панель администратора"
+              href={getDemoHref("/booking")}
+              className="inline-flex h-10 items-center gap-2 rounded-full bg-brand-accent px-4 text-[13px] font-semibold text-white shadow-[0_8px_24px_-10px_rgba(var(--brand-accent-rgb),0.8)] transition-all hover:bg-brand-accentHover"
             >
-              <Shield className="w-4 h-4" />
+              <Calendar className="h-4 w-4" />
+              Записаться
             </Link>
           </div>
 
-          {/* Мобильная кнопка меню */}
-          <div className="flex sm:hidden items-center gap-2">
-            <Link href={getDemoHref("/booking")}>
-              <Button size="sm" className="px-3 text-xs">
-                Запись
-              </Button>
-            </Link>
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-xl bg-brand-surface border border-brand-border text-theme-title focus:outline-none"
-              aria-label="Меню"
+          <div className="flex items-center gap-1.5 sm:hidden">
+            <a
+              href={"tel:" + (brand.phoneRaw || brand.phone)}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-brand-border text-theme-title"
+              aria-label="Позвонить"
             >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              <Phone className="h-4 w-4" />
+            </a>
+            <button
+              type="button"
+              onClick={() => setOpen((v) => !v)}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-brand-border text-theme-title"
+              aria-label={open ? "Закрыть меню" : "Открыть меню"}
+              aria-expanded={open}
+            >
+              {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Мобильное выпадающее меню */}
-      {mobileMenuOpen && (
-        <div className="sm:hidden bg-brand-surface border-b border-brand-border px-4 pt-3 pb-6 space-y-3 shadow-2xl animate-in slide-in-from-top-2 duration-200">
-          <div className="flex flex-col space-y-1">
-            {navLinks.map((link) => {
-              const isActive = pathname === link.href;
-              return (
-                <Link
-                  key={link.href}
-                  href={getDemoHref(link.href)}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-medium ${
-                    isActive
-                      ? "bg-brand-accent text-white font-semibold"
-                      : "text-theme-title hover:bg-black/5 dark:hover:bg-white/5"
-                  }`}
-                >
-                  <span>{link.label}</span>
-                  <ChevronRight className="w-4 h-4 opacity-50" />
-                </Link>
-              );
-            })}
+      {open && (
+        <div className="fixed inset-x-0 top-[72px] bottom-0 z-50 overflow-y-auto border-t border-brand-border bg-[var(--brand-primary)] px-5 pb-10 pt-5 sm:hidden">
+          <nav className="flex flex-col" aria-label="Мобильная навигация">
+            {NAV_LINKS.map((link) => (
+              <Link
+                key={link.href}
+                href={getDemoHref(link.href)}
+                className="flex items-center justify-between border-b border-brand-border/70 py-4 text-base font-medium text-theme-title"
+              >
+                {link.label}
+                <span className="text-theme-muted">›</span>
+              </Link>
+            ))}
+          </nav>
+
+          <Link
+            href={getDemoHref("/booking")}
+            className="mt-6 flex h-14 items-center justify-center gap-2 rounded-full bg-brand-accent text-base font-semibold text-white"
+          >
+            <Calendar className="h-5 w-5" />
+            Записаться онлайн
+          </Link>
+
+          <div className="mt-6 space-y-3 text-sm text-theme-muted">
+            <a href={"tel:" + (brand.phoneRaw || brand.phone)} className="flex items-center gap-2">
+              <Phone className="h-4 w-4 text-brand-accent" />
+              {brand.phone}
+            </a>
+            <p className="text-xs leading-relaxed">{brand.address}</p>
+            <p className="text-xs">{brand.workHours}</p>
           </div>
 
-          <div className="pt-3 border-t border-brand-border space-y-2">
-            <a
-              href={`tel:${brand.phoneRaw || brand.phone}`}
-              className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-theme-title bg-brand-secondary border border-brand-border"
-            >
-              <Phone className="w-4 h-4 text-brand-accent" />
-              <span>{brand.phone}</span>
-            </a>
-            <div className="flex items-center justify-between px-4 py-2 text-xs text-theme-muted">
-              <span className="flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-brand-accent" />
-                {brand.workHours}
-              </span>
-              <Link
-                href={getDemoHref("/admin")}
-                onClick={() => setMobileMenuOpen(false)}
-                className="text-theme-muted hover:text-theme-title flex items-center gap-1 underline underline-offset-4"
-              >
-                <Shield className="w-3.5 h-3.5" /> Вход для персонала
-              </Link>
-            </div>
-          </div>
+          <Link
+            href={getDemoHref("/admin")}
+            className="mt-8 inline-flex items-center gap-1.5 text-xs text-theme-muted"
+          >
+            <ShieldCheck className="h-3.5 w-3.5" />
+            Вход для персонала
+          </Link>
         </div>
       )}
     </header>
   );
 }
+
