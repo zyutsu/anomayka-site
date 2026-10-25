@@ -81,7 +81,7 @@ export function HeroSection({ initialBrand }: { initialBrand: BrandSettings }) {
             </div>
           </div>
 
-          <div className="relative animate-rise [animation-delay:120ms]">
+          <div className="relative hidden animate-rise [animation-delay:120ms] md:block">
             <div className="surface overflow-hidden rounded-[26px]">
               <div className="flex items-center justify-between border-b border-brand-border px-5 py-4">
                 <span className="mono-label">Визит · детали</span>
