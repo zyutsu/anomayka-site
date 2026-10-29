@@ -33,8 +33,8 @@ const DEFAULT_BRAND: BrandSettings = {
   telegramUrl: 'https://t.me/anomayka_auto',
   whatsappUrl: 'https://wa.me/79036666638',
   vkUrl: 'https://vk.com/anomayka',
-  heroHeadline: 'Онлайн-запись в автоцентр без звонков и ожидания',
-  heroSubheadline: 'Выберите услугу, удобное время за 2 минуты — гарантированная бронь без очередей и накладок.',
+  heroHeadline: 'Запись в сервис\nза две минуты',
+  heroSubheadline: 'Выберите услугу, удобное время и оставьте контакты. Мастер будет ждать вас в назначенный час, без звонков и очередей.',
   features: [
     { title: 'Запись 24/7', desc: 'Никаких гудков и автоответчиков — бронируйте в любое время суток', icon: 'Clock' },
     { title: 'Без накладок', desc: 'Автоматический учет занятости слотов и длительности каждой процедуры', icon: 'ShieldCheck' },
@@ -286,14 +286,35 @@ function normalizeBrand(brand: BrandSettings): BrandSettings {
     ? '#eeece6'
     : brand.secondaryColor;
 
+  // Телефон для dial-ссылок должен всегда совпадать с отображаемым номером.
+  // Ремонт рассинхрона (старые данные могли хранить phoneRaw от другого номера).
+  const phoneDigits = String(brand.phone || '').replace(/\D/g, '');
+  const phoneRaw = phoneDigits && phoneDigits !== brand.phoneRaw
+    ? phoneDigits
+    : brand.phoneRaw;
+
+  // Миграция старой однострочной hero-копии на новую двухстрочную.
+  const legacyHeroHeadline = 'Онлайн-запись в автоцентр без звонков и ожидания';
+  const legacyHeroSubheadline =
+    'Выберите услугу, удобное время за 2 минуты — гарантированная бронь без очередей и накладок.';
+
   return {
     ...brand,
     primaryColor: primary || '#f6f5f1',
     accentColor: accent || '#c8322a',
     secondaryColor: secondary || '#eeece6',
+    phoneRaw: phoneRaw || brand.phone,
     slogan: brand.slogan && brand.slogan.trim().length > 2
       ? brand.slogan
       : 'Онлайн-запись в автосервис без звонков и очередей',
+    heroHeadline:
+      brand.heroHeadline === legacyHeroHeadline
+        ? 'Запись в сервис\nза две минуты'
+        : brand.heroHeadline,
+    heroSubheadline:
+      brand.heroSubheadline === legacyHeroSubheadline
+        ? 'Выберите услугу, удобное время и оставьте контакты. Мастер будет ждать вас в назначенный час, без звонков и очередей.'
+        : brand.heroSubheadline,
   };
 }
 
@@ -340,6 +361,10 @@ export function getDatabase(): DatabaseSchema {
     if (fs.existsSync(TMP_DB_FILE)) {
       const content = fs.readFileSync(TMP_DB_FILE, 'utf-8');
       memoryDb = JSON.parse(content);
+      if (memoryDb?.brand) {
+        memoryDb.brand = normalizeBrand(memoryDb.brand);
+        memoryDb.shortLinks = allShortLinks(memoryDb);
+      }
       return memoryDb!;
     }
   } catch (e) {

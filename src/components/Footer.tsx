@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { MapPin, Phone, Clock, Send, MessageSquare, ShieldCheck, ArrowUpRight } from "lucide-react";
+import { MapPin, Phone, Clock, Send, MessageSquare, ShieldCheck, ArrowUpRight, Globe } from "lucide-react";
 import { BrandSettings } from "@/lib/types";
 import { useBrand } from "@/context/BrandContext";
 import { BrandMark } from "@/components/BrandMark";
@@ -52,6 +52,17 @@ export function Footer({ brand: propBrand }: { brand?: BrandSettings }) {
                 >
                   <MessageSquare className="h-3.5 w-3.5 text-emerald-600" />
                   WhatsApp
+                </a>
+              )}
+              {brand.vkUrl && (
+                <a
+                  href={brand.vkUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-9 items-center gap-2 rounded-full border border-brand-border px-3 text-xs text-theme-muted transition-colors hover:text-theme-title"
+                >
+                  <Globe className="h-3.5 w-3.5 text-sky-500" />
+                  VK
                 </a>
               )}
             </div>

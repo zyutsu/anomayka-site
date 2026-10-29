@@ -15,6 +15,14 @@ export function HeroSection({ initialBrand }: { initialBrand: BrandSettings }) {
   const mapHref =
     brand.mapUrl || "https://yandex.ru/maps/?text=" + encodeURIComponent(brand.address);
 
+  const headlineLines = (brand.heroHeadline || "Запись в сервис\nза две минуты").split("\n");
+  const subheadline =
+    brand.heroSubheadline ||
+    brand.name +
+      " — " +
+      brand.city +
+      ". Выберите услугу, удобное время и оставьте контакты. Мастер будет ждать вас в назначенный час, без звонков и очередей.";
+
   return (
     <section className="relative overflow-hidden">
       <div className="absolute inset-0 grid-texture opacity-70" aria-hidden="true" />
@@ -31,16 +39,20 @@ export function HeroSection({ initialBrand }: { initialBrand: BrandSettings }) {
               Свободные окна на сегодня · запись открыта
             </div>
 
-            <h1 className="display text-[clamp(2.9rem,7vw,5.4rem)] text-theme-title">
-              Запись в сервис
-              <br />
-              <span className="text-brand-accent">за две минуты.</span>
+            <h1 className="display text-[clamp(2.4rem,6vw,4.7rem)] text-theme-title">
+              {headlineLines.map((line, i) =>
+                i === 0 ? (
+                  <span key={i}>{line}</span>
+                ) : (
+                  <span key={i} className="block text-[0.78em] tracking-[-0.02em] text-brand-accent">
+                    {line}
+                  </span>
+                )
+              )}
             </h1>
 
             <p className="mt-6 max-w-xl text-[15px] leading-relaxed text-theme-muted sm:text-base">
-              {brand.name} — {brand.city}. Выберите услугу, удобное время и оставьте
-              контакты. Мастер будет ждать вас в назначенный час, без звонков и
-              очередей.
+              {subheadline}
             </p>
 
             <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">

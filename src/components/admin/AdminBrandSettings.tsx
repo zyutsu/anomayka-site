@@ -25,15 +25,15 @@ export function AdminBrandSettings({ brand, onSaveBrand }: AdminBrandSettingsPro
   const handleResetColors = async () => {
     const updated = {
       ...form,
-      primaryColor: "#000000",
-      accentColor: "#ff0000",
-      secondaryColor: "#171a24",
+      primaryColor: "#f6f5f1",
+      accentColor: "#c8322a",
+      secondaryColor: "#eeece6",
     };
     setForm(updated);
     await onSaveBrand({
-      primaryColor: "#000000",
-      accentColor: "#ff0000",
-      secondaryColor: "#171a24",
+      primaryColor: "#f6f5f1",
+      accentColor: "#c8322a",
+      secondaryColor: "#eeece6",
     });
     setSavedSuccess(true);
     setTimeout(() => setSavedSuccess(false), 3000);
@@ -128,6 +128,25 @@ export function AdminBrandSettings({ brand, onSaveBrand }: AdminBrandSettingsPro
             label="Слоган компании"
             value={form.slogan}
             onChange={(e) => setForm({ ...form, slogan: e.target.value })}
+          />
+
+          <div className="pt-1">
+            <Input
+              label="Заголовок первого экрана"
+              value={form.heroHeadline || ""}
+              placeholder="Запись в сервис\nза две минуты"
+              onChange={(e) => setForm({ ...form, heroHeadline: e.target.value })}
+            />
+            <p className="mt-1 text-[11px] leading-relaxed text-theme-muted">
+              Перенос на новую строку — символом <span className="font-mono">\n</span>.
+            </p>
+          </div>
+
+          <Input
+            label="Подзаголовок первого экрана"
+            value={form.heroSubheadline || ""}
+            placeholder="Выберите услугу, удобное время — гарантированная бронь без звонков"
+            onChange={(e) => setForm({ ...form, heroSubheadline: e.target.value })}
           />
 
           <div className="space-y-3 pt-2">

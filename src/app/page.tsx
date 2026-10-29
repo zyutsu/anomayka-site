@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import { ArrowUpRight, CalendarCheck, CheckCircle2, Clock3, MapPin, Phone, ShieldCheck, Star } from "lucide-react";
+import { ArrowUpRight, Award, CalendarCheck, CheckCircle2, Clock, Clock3, MapPin, Phone, ShieldCheck, Star, Zap } from "lucide-react";
 import { getDatabaseAsync } from "@/lib/db";
 import { HeroSection } from "@/components/home/HeroSection";
 import { HomeCategories } from "@/components/home/HomeCategories";
@@ -34,12 +34,20 @@ const STEPS = [
   },
 ];
 
+const FEATURE_ICONS: Record<string, React.ElementType> = {
+  Clock,
+  ShieldCheck,
+  Zap,
+  Award,
+};
+
 export default async function HomePage() {
   const db = await getDatabaseAsync();
   const brand = db.brand;
   const categories = db.categories.filter((c) => c.isActive);
   const popularServices = db.services.filter((s) => s.isActive && s.isPopular).slice(0, 4);
   const reviews = (db.reviews || []).slice(0, 3);
+  const features = db.brand.features || [];
   const mapHref =
     brand.mapUrl || "https://yandex.ru/maps/?text=" + encodeURIComponent(brand.address);
 
@@ -48,20 +56,23 @@ export default async function HomePage() {
       <HeroSection initialBrand={brand} />
 
       <section className="border-y border-brand-border bg-[var(--brand-secondary)]/40">
-        <div className="page-shell grid grid-cols-2 gap-y-6 py-7 md:grid-cols-4">
-          {[
-            ["24/7", "запись в любое время"],
-            ["2 мин", "среднее время брони"],
-            ["0 звонков", "чтобы записаться"],
-            ["1 день", "на запуск под ваш сервис"],
-          ].map(([value, label]) => (
-            <div key={label} className="flex flex-col gap-1 px-1 md:px-4">
-              <span className="text-[clamp(1.35rem,2.4vw,1.75rem)] font-bold tracking-tight text-theme-title">
-                {value}
-              </span>
-              <span className="text-[11px] leading-snug text-theme-muted">{label}</span>
-            </div>
-          ))}
+        <div className="page-shell grid grid-cols-1 gap-x-8 gap-y-6 py-8 sm:grid-cols-2 lg:grid-cols-4">
+          {features.map((feature) => {
+            const Icon = FEATURE_ICONS[feature.icon] || CheckCircle2;
+            return (
+              <div key={feature.title} className="flex items-start gap-3.5">
+                <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-brand-border bg-brand-surface text-brand-accent">
+                  <Icon className="h-4 w-4" />
+                </span>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[13.5px] font-semibold tracking-tight text-theme-title">
+                    {feature.title}
+                  </span>
+                  <span className="text-[11.5px] leading-snug text-theme-muted">{feature.desc}</span>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </section>
 
